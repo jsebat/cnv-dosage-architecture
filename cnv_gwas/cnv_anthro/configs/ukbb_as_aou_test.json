@@ -1,8 +1,8 @@
 {
  "cohort": "UKBB_via_AoU_path_TEST",
- "note": "Config-swap plumbing test: 5,000 UKBB people re-encoded as AoU inputs (GATK-SV VCF, OMOP rows, ancestry file); every step identical to aou_workbench.json except paths, BigQuery replaced by --measurements_csv, and nrep 50.",
- "results_dir": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/aou_path_test",
- "export_dir": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/aou_path_test_export",
+ "note": "Config-swap plumbing test (v2, 2026-11-15): 5,000 UKBB people re-encoded as AoU inputs; aou_workbench.json steps incl. strata, loci, grid with shared UKBB shifts, export with cross-stratum suppression; small nrep.",
+ "results_dir": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/aou_path_test_v2",
+ "export_dir": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/aou_path_test_v2_export",
  "min_cell": 20,
  "pheno_table": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/aou_path_test/aou_pheno_std.tsv",
  "cnv_table": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/aou_path_test/aou_srwgs_sv.cnv",
@@ -101,7 +101,8 @@
   "bp_dir": null,
   "known_loci": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/omar_alleles/gws_all_cnvs_known_loci.txt",
   "segdups": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/segDups.bed",
-  "filtered_cnv_beds": null
+  "filtered_cnv_beds": null,
+  "ref_probes": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/ukbb_ref_probes.tsv.gz"
  },
  "alleles": {
   "resources": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/omar_alleles",
@@ -118,5 +119,91 @@
   "loci": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/omar_loci_all.tsv",
   "loo_runs": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/loo2_runs.tsv",
   "workers": 1
+ },
+ "strata": {
+  "all": {},
+  "test": {
+   "ancestry_pred": [
+    "test"
+   ]
+  },
+  "female": {
+   "sex": [
+    2
+   ]
+  },
+  "male": {
+   "sex": [
+    1
+   ]
+  }
+ },
+ "partitions": {
+  "sex": [
+   "female",
+   "male"
+  ],
+  "ancestry": [
+   "test"
+  ]
+ },
+ "loci": {
+  "file": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/growth_loci/loci_for_effects.tsv",
+  "min_carriers": 2
+ },
+ "grid": {
+  "strata": [
+   "all",
+   "female",
+   "male"
+  ],
+  "jobs": 4,
+  "panels": "gtex_nonbrain",
+  "seed": 2026,
+  "exons": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/hg38_refGene_20200708.exon.txt",
+  "gene_cov": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/gene_covariates.tsv",
+  "clingen": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/ClinGen_gene_curation_list_GRCh38.tsv",
+  "loci": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/growth_loci/loci_sacks34.tsv",
+  "loo_runs": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/growth_loci/loo_runs_sacks34.tsv",
+  "loo_mode": "drivers",
+  "major_loci": "16p11_2_BP4_BP5,15q11_2_BP1_BP2",
+  "perms_file": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/shared_shifts/{trait}_shifts.npy",
+  "designs": [
+   {
+    "file": "designs/grid_univariate.json",
+    "nrep": 50,
+    "only": [
+     "g:all:c3:uns:scaled|adj",
+     "none_H|adj"
+    ]
+   },
+   {
+    "file": "designs/grid_callsize.json",
+    "nrep": 50,
+    "only": [
+     "size5:g:all:c3:uns:scaled"
+    ]
+   },
+   {
+    "file": "designs/joint_2026-11-15.json",
+    "traits": [
+     "height"
+    ],
+    "only": [
+     "height_selected"
+    ],
+    "nrep": 50
+   },
+   {
+    "file": "designs/joint_2026-11-15.json",
+    "traits": [
+     "bmi"
+    ],
+    "only": [
+     "bmi_selected"
+    ],
+    "nrep": 50
+   }
+  ]
  }
 }

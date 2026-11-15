@@ -1,8 +1,8 @@
 {
  "cohort": "UKBB",
  "note": "UK Biobank calls from the PGC CNV Freeze_2024 (XD, dataset 'ukbb', Axiom platform). Expanse paths.",
- "results_dir": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/pipeline_ukbb",
- "export_dir": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/export_ukbb",
+ "results_dir": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/pipeline_ukbb_strata",
+ "export_dir": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/export_ukbb_strata",
  "min_cell": 20,
  "pheno_table": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/ukbb_pheno_std.tsv",
  "cnv_table": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/ukbb_pgc_xd.cnv",
@@ -97,5 +97,119 @@
   "loci": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/omar_loci_all.tsv",
   "loo_runs": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/loo2_runs.tsv",
   "workers": 1
+ },
+ "strata": {
+  "all": {},
+  "EUR": {
+   "ancestry_pgc": [
+    "EUR"
+   ]
+  },
+  "AFR": {
+   "ancestry_pgc": [
+    "AFR"
+   ]
+  },
+  "ASN": {
+   "ancestry_pgc": [
+    "ASN"
+   ]
+  },
+  "MIX": {
+   "ancestry_pgc": [
+    "MIX"
+   ]
+  },
+  "LAT": {
+   "ancestry_pgc": [
+    "LAT"
+   ]
+  },
+  "NAT": {
+   "ancestry_pgc": [
+    "NAT"
+   ]
+  },
+  "female": {
+   "sex": [
+    2
+   ]
+  },
+  "male": {
+   "sex": [
+    1
+   ]
+  }
+ },
+ "partitions": {
+  "sex": [
+   "female",
+   "male"
+  ],
+  "ancestry": [
+   "EUR",
+   "AFR",
+   "ASN",
+   "MIX",
+   "LAT",
+   "NAT"
+  ]
+ },
+ "loci": {
+  "file": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/growth_loci/loci_for_effects.tsv",
+  "min_carriers": 2
+ },
+ "grid": {
+  "strata": [
+   "all",
+   "EUR",
+   "AFR",
+   "ASN",
+   "female",
+   "male"
+  ],
+  "jobs": 16,
+  "panels": "gtex_nonbrain",
+  "seed": 2026,
+  "exons": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/hg38_refGene_20200708.exon.txt",
+  "gene_cov": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/gene_covariates.tsv",
+  "clingen": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/ClinGen_gene_curation_list_GRCh38.tsv",
+  "loci": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/growth_loci/loci_sacks34.tsv",
+  "loo_runs": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/growth_loci/loo_runs_sacks34.tsv",
+  "loo_mode": "drivers",
+  "major_loci": "16p11_2_BP4_BP5,16p11_2_BP1_BP3,22q11_21_A_D,15q11_2_BP1_BP2,1q21_1,16p13_11_BP1_BP2,17q12,17p12",
+  "perms_file": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/shared_shifts/{trait}_shifts.npy",
+  "designs": [
+   {
+    "file": "designs/grid_univariate.json",
+    "nrep": 1000
+   },
+   {
+    "file": "designs/grid_callsize.json",
+    "nrep": 1000
+   },
+   {
+    "file": "designs/joint_2026-11-15.json",
+    "traits": [
+     "height"
+    ],
+    "only": [
+     "height_selected",
+     "consensus_v3"
+    ],
+    "nrep": 2000
+   },
+   {
+    "file": "designs/joint_2026-11-15.json",
+    "traits": [
+     "bmi"
+    ],
+    "only": [
+     "bmi_selected",
+     "consensus_v3"
+    ],
+    "nrep": 2000
+   }
+  ]
  }
 }

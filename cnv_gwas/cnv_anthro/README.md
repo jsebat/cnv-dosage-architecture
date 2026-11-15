@@ -19,7 +19,10 @@ python run_pipeline.py --config configs/<cohort>.json --steps prep,gwas,plots,al
 | `alleles.py` | Port of Omar's allele calling, followed by the trait association. |
 | `conga_axes_qt.py` | Task B. ConGA consensus2 axes, joint OLS, burden-matched genome-shift null, 18 LOO runs plus a no-loci run, all with matched nulls. |
 | `plots.py` | Miami plot. |
-| `export_aggregate.py` | Copies aggregates only, enforcing the small-cell rule (no count from 1 to 20). |
+| `locus_effects.py` | Per-locus DEL/DUP effects at the growth loci (34 Sacks recurrent intervals, 50% reciprocal overlap; 26 UKBB-discovered loci, call covers >= 50% of the locus). |
+| `conga_grid_qt.py` | Genome-wide univariate grid (TWAS-count and constraint measures), call-size split (`L5~`/`S5~` terms), joint models; LOO 'all' or 'drivers' (major loci individually, minor loci together); shared shifts (`--perms_file`) and `null_runs.npz` for meta-analysis. |
+| `meta_sumstats.py`, `meta_grid.py` | Cross-cohort meta-analysis: IVW fixed/random + Q/I2 for probes, alleles, loci; replicate-matched Stouffer meta for the grid. |
+| `export_aggregate.py` | Copies aggregates only, enforcing the small-cell rule (no count from 1 to 20) plus cross-stratum secondary suppression; writes EXPORT_MANIFEST.txt. |
 | `configs/` | `ukbb_expanse.json`, `aou_workbench.json`, and `ukbb_as_aou_test.json` (the AoU code path run on UKBB data). |
 | `workbench/` | AoU Jupyter notebook and dsub launcher. |
 | `tests/` | Synthetic AoU unit test, plus the builder for the UKBB-as-AoU test. |
@@ -31,6 +34,10 @@ Requirements: Python 3 with numpy, scipy, pandas and matplotlib. On AoU, add goo
 - **Phenotype table:** one row per analysed person, with columns `IID sex(1/2) age age2 [batch] PC1..PCk height bmi height_rint bmi_rint`. The traits are rank-inverse-normal transformed within sex (Blom).
 - **CNV table:** PLINK .cnv layout with columns `FID IID CHR BP1 BP2 TYPE SCORE SITES`. TYPE 1 = DEL, 3 = DUP. CHR is numeric.
 - **People without sequencing or calls:** they must not appear in the phenotype table, because anyone in it with no calls is treated as a non-carrier.
+
+## Strata (2026-11-15)
+
+`config["strata"]` maps a stratum name to a row filter of the phenotype table (UKBB: ancestry_pgc EUR/AFR/ASN/MIX/LAT/NAT; AoU: ancestry_pred eur/afr/amr/eas/sas/mid; both: sex). Traits are re-ranked (RINT within sex) inside each stratum; every step writes to `<results_dir>/<stratum>/`. `config["partitions"]` tells the export which strata partition `all` (for secondary suppression).
 
 ## Task A choices
 

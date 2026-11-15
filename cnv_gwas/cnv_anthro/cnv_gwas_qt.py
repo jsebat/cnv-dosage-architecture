@@ -145,6 +145,8 @@ def main():
     ap.add_argument("--freq_max", type=float, default=0.02); ap.add_argument("--min_ncnv", type=int, default=12)
     ap.add_argument("--max_filtered", type=int, default=20)
     ap.add_argument("--dup_blacklist", default="11:134824089-134923878")
+    ap.add_argument("--ref_probes", default=None, help="optional TSV CHR BP TYPE(DEL/DUP) of another cohort's probe positions (e.g. UKBB sumstats) "
+                    "to test in addition, for probe-level meta-analysis; flagged in column REF_PROBE")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     lo, hi = map(int, a.chroms.split("-")); chroms = list(range(lo, hi + 1))
@@ -172,6 +174,12 @@ def main():
     df_res = R.N - R.k - 1
     for tname, tcode in TYPES.items():
         pr = load_probes(a.bp_dir, cnv, tcode, chroms)
+        refset = set()
+        if a.ref_probes:
+            rp = pd.read_csv(a.ref_probes, sep="	", usecols=["CHR", "BP", "TYPE"])
+            rp = rp[(rp.TYPE == tname) & rp.CHR.isin(chroms)][["CHR", "BP"]].astype(np.int64)
+            refset = set(zip(rp.CHR, rp.BP))
+            pr = pd.concat([pr, rp]).drop_duplicates().sort_values(["CHR", "BP"]).reset_index(drop=True)
         rows = []; sets = {}
         for c in chroms:
             ct = cnv[(cnv.CHR == c) & (cnv.TYPE == tcode)]
@@ -187,6 +195,8 @@ def main():
         S = S[S.NCNVs > 0].reset_index(drop=True)          # Omar step 05: probes with >= 1 call in the cohort
         S["P"] = np.where(np.isfinite(S["T"]), 2 * st.t.sf(np.abs(S["T"]), df_res), 1.0)
         S["N"] = R.N; S["FREQ"] = S.NCNVs / R.N
+        if a.ref_probes:
+            S["REF_PROBE"] = [(c, b) in refset for c, b in zip(S.CHR, S.BP)]
         # ---- Omar's probe filters (09_01_color.R) ----
         fail = S.FREQ > a.freq_max
         if known is not None:

@@ -1,6 +1,6 @@
 {
  "cohort": "AllOfUs",
- "note": "Run inside the AoU Researcher Workbench (Controlled Tier). Fill the two FILL_FROM_DATA_DICTIONARY paths from 'How the All of Us Genomic data are organized' (SV VCF, ancestry_preds.tsv) for the CDR version of the workspace. Individual-level files stay on the persistent disk / workspace bucket; only export_dir content may leave, after the 1-20 small-cell rule.",
+ "note": "Run inside the AoU Researcher Workbench (Controlled Tier). Fill the two FILL_FROM_DATA_DICTIONARY paths from 'How the All of Us Genomic data are organized' (SV VCF, ancestry_preds.tsv) for the CDR version of the workspace. Individual-level files stay on the persistent disk / workspace bucket; only export_dir content may leave, after the 1-20 small-cell rule. Strata, loci and grid steps added 2026-11-15 for the UKBB+AoU meta-analysis; see HANDOFF_AoU_Milad.",
  "results_dir": "${HOME}/cnv_anthro_run/results",
  "export_dir": "${HOME}/cnv_anthro_run/export_aggregate",
  "min_cell": 20,
@@ -99,7 +99,8 @@
   "bp_dir": null,
   "known_loci": "../resources/omar_alleles/gws_all_cnvs_known_loci.txt",
   "segdups": "../resources/segDups.bed",
-  "filtered_cnv_beds": null
+  "filtered_cnv_beds": null,
+  "ref_probes": "../resources/ukbb_ref_probes.tsv.gz"
  },
  "alleles": {
   "resources": "../resources/omar_alleles",
@@ -118,5 +119,119 @@
   "loci": "../resources/conga/omar_loci_all.tsv",
   "loo_runs": "../resources/conga/loo2_runs.tsv",
   "workers": 1
+ },
+ "strata": {
+  "all": {},
+  "eur": {
+   "ancestry_pred": [
+    "eur"
+   ]
+  },
+  "afr": {
+   "ancestry_pred": [
+    "afr"
+   ]
+  },
+  "amr": {
+   "ancestry_pred": [
+    "amr"
+   ]
+  },
+  "eas": {
+   "ancestry_pred": [
+    "eas"
+   ]
+  },
+  "sas": {
+   "ancestry_pred": [
+    "sas"
+   ]
+  },
+  "mid": {
+   "ancestry_pred": [
+    "mid"
+   ]
+  },
+  "female": {
+   "sex": [
+    2
+   ]
+  },
+  "male": {
+   "sex": [
+    1
+   ]
+  }
+ },
+ "partitions": {
+  "sex": [
+   "female",
+   "male"
+  ],
+  "ancestry": [
+   "eur",
+   "afr",
+   "amr",
+   "eas",
+   "sas",
+   "mid"
+  ]
+ },
+ "loci": {
+  "file": "../resources/growth_loci/loci_for_effects.tsv",
+  "min_carriers": 2
+ },
+ "grid": {
+  "strata": [
+   "all",
+   "eur",
+   "afr",
+   "amr",
+   "female",
+   "male"
+  ],
+  "jobs": 8,
+  "panels": "gtex_nonbrain",
+  "seed": 2026,
+  "exons": "../resources/conga/hg38_refGene_20200708.exon.txt",
+  "gene_cov": "../resources/conga/gene_covariates.tsv",
+  "clingen": "../resources/conga/ClinGen_gene_curation_list_GRCh38.tsv",
+  "loci": "../resources/growth_loci/loci_sacks34.tsv",
+  "loo_runs": "../resources/growth_loci/loo_runs_sacks34.tsv",
+  "loo_mode": "drivers",
+  "major_loci": "16p11_2_BP4_BP5,16p11_2_BP1_BP3,22q11_21_A_D,15q11_2_BP1_BP2,1q21_1,16p13_11_BP1_BP2,17q12,17p12",
+  "perms_file": "../resources/shared_shifts/{trait}_shifts.npy",
+  "designs": [
+   {
+    "file": "designs/grid_univariate.json",
+    "nrep": 1000
+   },
+   {
+    "file": "designs/grid_callsize.json",
+    "nrep": 1000
+   },
+   {
+    "file": "designs/joint_2026-11-15.json",
+    "traits": [
+     "height"
+    ],
+    "only": [
+     "height_selected",
+     "consensus_v3"
+    ],
+    "nrep": 2000
+   },
+   {
+    "file": "designs/joint_2026-11-15.json",
+    "traits": [
+     "bmi"
+    ],
+    "only": [
+     "bmi_selected",
+     "consensus_v3"
+    ],
+    "nrep": 2000
+   }
+  ]
  }
 }

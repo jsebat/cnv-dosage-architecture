@@ -1,20 +1,28 @@
 """Copy aggregate results to an export folder, enforcing a small-cell rule (All of Us: no count 1..20 may leave the
 Workbench, nor anything that lets one be recomputed). Applied to every cohort so UKBB and AoU exports are identical in form.
 
-Rules: any count column (NCNVs, n_carriers, cases/carriers fields, json counts) with 1 <= x <= min_cell is replaced by
-'<=min_cell'; rows of per-probe / per-allele tables whose carrier count is in that range also lose BETA/SE/T/P
-(an effect on <= 20 people is not exported). Person-level files (*genotypes*, pheno, .cnv) are never copied.
+Primary rule: in every per-probe / per-allele / per-locus table, a row whose carrier count is 1..min_cell loses its count
+('<=min_cell') and its effect statistics (BETA/SE/T/P/FREQ...: 'suppressed'), because SE ~ 1/sqrt(n) would reveal the count.
+Secondary rule (stratified runs): for each partition of the parent stratum 'all' (e.g. sex = female + male; ancestry =
+eur + afr + ...), if for a row key (probe / allele / locus x dosage) any child stratum OR the remainder
+(all - sum of children, e.g. participants without an ancestry call) has 1..min_cell carriers, that row is suppressed in
+every child stratum of the partition (the parent row follows the primary rule only). Then no small count can be
+recovered by subtraction across exported tables.
+Person-level files (*genotype*, pheno, .cnv) are never copied. Null-replicate arrays (.npz, test statistics only) are
+copied as float32.
 """
 import argparse
 import json
 import os
 import shutil
+from collections import defaultdict
 import numpy as np
 import pandas as pd
 
-COUNT_COLS = ["NCNVs", "n_carriers", "n", "cases", "ctrl", "carriers_port", "carriers_omar", "n_probes"]
-STAT_COLS = ["BETA", "SE", "T", "P", "BETA_SD", "raw_mean_diff_unadjusted", "FREQ"]
-NEVER = ("genotype", "pheno", ".cnv", "allele_genotypes")
+COUNT_COLS = ["NCNVs", "n_carriers", "n", "cases", "ctrl", "carriers_port", "carriers_omar"]   # person counts (n_probes is not one)
+STAT_COLS = ["BETA", "SE", "T", "P", "BETA_SD", "raw_mean_diff_unadjusted", "FREQ", "median_call_kb"]
+NEVER = ("genotype", "pheno", ".cnv", "allele_genotypes", "stratum_pheno")
+KEYS = [["CHR", "BP"], ["trait", "allele"], ["allele"], ["trait", "NAME", "CNV"]]
 
 
 def scrub_json(o, k):
@@ -27,12 +35,68 @@ def scrub_json(o, k):
     return o
 
 
+def count_col(d):
+    for c in COUNT_COLS:
+        if c in d.columns:
+            return c
+    return None
+
+
+def key_cols(d):
+    for k in KEYS:
+        if all(c in d.columns for c in k):
+            return k
+    return None
+
+
+def read_tsv(p):
+    return pd.read_csv(p, sep="\t")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--results", required=True); ap.add_argument("--export", required=True)
     ap.add_argument("--min_cell", type=int, default=20)
+    ap.add_argument("--strata", default="", help="comma list of stratum folders under --results (stratified runs)")
+    ap.add_argument("--keep_small_probe_rows", action="store_true",
+                    help="keep withheld rows in per-probe sumstats (default: drop them; they carry no information and inflate egress size)")
+    ap.add_argument("--partitions", default='{"sex": ["female", "male"], "ancestry": ["eur", "afr", "amr", "eas", "sas", "mid"]}',
+                    help="JSON: name -> child strata of the parent stratum 'all'")
     a = ap.parse_args()
-    k = a.min_cell; n_sup = 0
+    k = a.min_cell
+    strata = [s for s in a.strata.split(",") if s]
+    parts = {n: [c for c in ch if c in strata] for n, ch in json.loads(a.partitions).items()} if strata else {}
+    # ---- secondary suppression map: (stratum, rel path within stratum) -> set of row keys to suppress
+    extra = defaultdict(set)
+    if strata and "all" in strata:
+        rels = set()
+        for root, _, files in os.walk(os.path.join(a.results, "all")):
+            for f in files:
+                if f.endswith((".tsv", ".tsv.gz")) and not any(x in f for x in NEVER):
+                    rels.add(os.path.relpath(os.path.join(root, f), os.path.join(a.results, "all")))
+        for rel in sorted(rels):
+            par = read_tsv(os.path.join(a.results, "all", rel)); cc = count_col(par); kc = key_cols(par)
+            if cc is None or kc is None:
+                continue
+            pc = par.set_index(kc)[cc].pipe(pd.to_numeric, errors="coerce")
+            pc = pc[~pc.index.duplicated()]
+            for pname, kids in parts.items():
+                if not kids:
+                    continue
+                tot = pd.Series(0.0, index=pc.index); bad = pd.Series(False, index=pc.index)
+                for kid in kids:
+                    p = os.path.join(a.results, kid, rel)
+                    if not os.path.exists(p):
+                        continue
+                    d = read_tsv(p)
+                    v = d.set_index(kc)[cc].pipe(pd.to_numeric, errors="coerce"); v = v[~v.index.duplicated()].reindex(pc.index).fillna(0)
+                    tot += v; bad |= v.between(1, k)
+                rem = pc.fillna(0) - tot
+                bad |= rem.between(1, k)
+                keys = set(bad[bad].index)
+                for kid in kids:
+                    extra[(kid, rel)] |= keys
+    n_sup = 0; n_sec = 0
     for root, _, files in os.walk(a.results):
         for f in files:
             if any(x in f for x in NEVER):
@@ -40,23 +104,47 @@ def main():
             src = os.path.join(root, f); rel = os.path.relpath(src, a.results); dst = os.path.join(a.export, rel)
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             if f.endswith((".tsv", ".tsv.gz")):
-                d = pd.read_csv(src, sep="\t")
+                d = read_tsv(src)
                 cc = [c for c in COUNT_COLS if c in d.columns]
                 small = np.zeros(len(d), bool)
                 for c in cc:
-                    v = pd.to_numeric(d[c], errors="coerce")
-                    small |= v.between(1, k).to_numpy()
+                    small |= pd.to_numeric(d[c], errors="coerce").between(1, k).to_numpy()
+                n_sup += int(small.sum())
+                parts_rel = rel.split(os.sep, 1)
+                if len(parts_rel) == 2 and os.path.basename(parts_rel[1]).startswith("lead_"):     # lead rows: use the probe table's key set
+                    parts_rel = [parts_rel[0], os.path.join(os.path.dirname(parts_rel[1]),
+                                                            os.path.basename(parts_rel[1]).replace("lead_", "sumstats_").replace(".tsv", ".tsv.gz"))]
+                if strata and len(parts_rel) == 2 and (parts_rel[0], parts_rel[1]) in extra and key_cols(d):
+                    keys = extra[(parts_rel[0], parts_rel[1])]
+                    kc = key_cols(d)
+                    sec = np.array([tuple(r) in keys if len(kc) > 1 else r[0] in keys for r in d[kc].itertuples(index=False)]) & ~small
+                    n_sec += int(sec.sum()); small |= sec
                 for c in [c for c in STAT_COLS if c in d.columns]:
                     d[c] = d[c].astype(object); d.loc[small, c] = "suppressed"
                 for c in cc:
-                    v = pd.to_numeric(d[c], errors="coerce"); d[c] = d[c].astype(object); d.loc[v.between(1, k), c] = f"<={k}"
-                n_sup += int(small.sum())
+                    v = pd.to_numeric(d[c], errors="coerce"); d[c] = d[c].astype(object)
+                    d.loc[(v.between(1, k)).to_numpy(), c] = f"<={k}"                   # primary
+                    d.loc[small & (v > k).to_numpy(), c] = "suppressed"                 # secondary: count > k but withheld
+                if f.startswith("sumstats_") and not a.keep_small_probe_rows:
+                    d = d[~small]                                   # withheld probes are left out instead of written as suppressed rows
                 d.to_csv(dst, sep="\t", index=False)
             elif f.endswith(".json"):
                 json.dump(scrub_json(json.load(open(src)), k), open(dst, "w"), indent=1)
+            elif f == "null_full.npz":
+                continue                                            # same arrays as the 'full__' entries of null_runs.npz
+            elif f.endswith(".npz"):
+                z = np.load(src)
+                np.savez_compressed(dst, **{n: (z[n].astype(np.float32) if z[n].dtype.kind == "f" else z[n]) for n in z.files})
             elif f.endswith((".png", ".pdf", ".md", ".txt")):
                 shutil.copy(src, dst)
-    print(f"exported to {a.export}; rows with small cells suppressed: {n_sup}")
+    tot = 0; lines = []
+    for root, _, files in os.walk(a.export):
+        for f in sorted(files):
+            p = os.path.join(root, f); sz = os.path.getsize(p); tot += sz; lines.append(f"{sz}\t{os.path.relpath(p, a.export)}")
+    with open(os.path.join(a.export, "EXPORT_MANIFEST.txt"), "w") as fh:
+        fh.write(f"small-cell rule: counts 1..{k} withheld; rows withheld primary {n_sup}, secondary (cross-stratum) {n_sec}\n"
+                 f"total bytes {tot} ({tot / 1e6:.1f} MB) in {len(lines)} files\nbytes\tfile\n" + "\n".join(lines) + "\n")
+    print(f"exported to {a.export}; rows suppressed (primary, count 1..{k}): {n_sup}; secondary (cross-stratum): {n_sec}; total {tot / 1e6:.1f} MB")
 
 
 if __name__ == "__main__":
