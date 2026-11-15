@@ -1,0 +1,175 @@
+{
+ "trait": "height_rint",
+ "N": 345169,
+ "covariate_columns": 119,
+ "genes_in_circle": 26986,
+ "panels": "gtex_nonbrain",
+ "n_panels": 32,
+ "panel_list": [
+  "GTEX_Adipose_Subcutaneous",
+  "GTEX_Adipose_Visceral_Omentum",
+  "GTEX_Adrenal_Gland",
+  "GTEX_Artery_Aorta",
+  "GTEX_Artery_Coronary",
+  "GTEX_Artery_Tibial",
+  "GTEX_Breast_Mammary_Tissue",
+  "GTEX_Colon_Sigmoid",
+  "GTEX_Colon_Transverse",
+  "GTEX_Esophagus_Gastroesophageal_Junction",
+  "GTEX_Esophagus_Mucosa",
+  "GTEX_Esophagus_Muscularis",
+  "GTEX_Heart_Atrial_Appendage",
+  "GTEX_Heart_Left_Ventricle",
+  "GTEX_Liver",
+  "GTEX_Lung",
+  "GTEX_Muscle_Skeletal",
+  "GTEX_Nerve_Tibial",
+  "GTEX_Ovary",
+  "GTEX_Pancreas",
+  "GTEX_Pituitary",
+  "GTEX_Prostate",
+  "GTEX_Skin_Not_Sun_Exposed_Suprapubic",
+  "GTEX_Skin_Sun_Exposed_Lower_leg",
+  "GTEX_Small_Intestine_Terminal_Ileum",
+  "GTEX_Spleen",
+  "GTEX_Stomach",
+  "GTEX_Testis",
+  "GTEX_Thyroid",
+  "GTEX_Uterus",
+  "GTEX_Vagina",
+  "GTEX_Whole_Blood"
+ ],
+ "genes_with_twas_z": 4398,
+ "genes_z_gt3": 691,
+ "genes_z_lt_m3": 730,
+ "genes_shet_gt_cut": 5791,
+ "calls_DEL": 260920,
+ "calls_DUP": 149329,
+ "calls_dropped_per_run": {
+  "full": 0,
+  "loo_1q21_1_TAR_BP1_BP3": 728,
+  "loo_1q21_1": 213,
+  "loo_SMYD3": 456,
+  "loo_NRXN1": 521,
+  "loo_3q29": 12,
+  "loo_7q11_23_WBS": 18,
+  "loo_ASTN2": 311,
+  "loo_15q11_2_13_1_BP1_BP3": 3172,
+  "loo_15q13_1_13_3_BP3_BP5_1": 3138,
+  "loo_15q13_1_13_3_BP3_BP5_2": 57,
+  "loo_USP7_HAPSTR1": 99,
+  "loo_16p13_11_BP1_BP3": 1044,
+  "loo_16p12_2_BP2_BP3": 475,
+  "loo_16p11_2_BP1_BP3_1": 142,
+  "loo_16p11_2_BP1_BP3_2": 58,
+  "loo_16p11_2_BP4_BP5": 278,
+  "loo_22q11_21_A_D": 575,
+  "loo_22q13_3_SHANK3": 115,
+  "no_loci": 11412
+ },
+ "null_burden_dev_median": 0.05740584598088816,
+ "null_burden_dev_max": 0.17279260780287475,
+ "carriers_per_run": {
+  "full": {
+   "DEL": 140899,
+   "DUP": 108102,
+   "any_gene_hit": 215706
+  },
+  "loo_1q21_1_TAR_BP1_BP3": {
+   "DEL": 140680,
+   "DUP": 107794,
+   "any_gene_hit": 215351
+  },
+  "loo_1q21_1": {
+   "DEL": 140839,
+   "DUP": 108001,
+   "any_gene_hit": 215588
+  },
+  "loo_SMYD3": {
+   "DEL": 140750,
+   "DUP": 108041,
+   "any_gene_hit": 215546
+  },
+  "loo_NRXN1": {
+   "DEL": 140588,
+   "DUP": 108097,
+   "any_gene_hit": 215480
+  },
+  "loo_3q29": {
+   "DEL": 140890,
+   "DUP": 108099,
+   "any_gene_hit": 215697
+  },
+  "loo_7q11_23_WBS": {
+   "DEL": 140898,
+   "DUP": 108092,
+   "any_gene_hit": 215699
+  },
+  "loo_ASTN2": {
+   "DEL": 140749,
+   "DUP": 108078,
+   "any_gene_hit": 215573
+  },
+  "loo_15q11_2_13_1_BP1_BP3": {
+   "DEL": 139847,
+   "DUP": 106729,
+   "any_gene_hit": 213897
+  },
+  "loo_15q13_1_13_3_BP3_BP5_1": {
+   "DEL": 140883,
+   "DUP": 106545,
+   "any_gene_hit": 214620
+  },
+  "loo_15q13_1_13_3_BP3_BP5_2": {
+   "DEL": 140856,
+   "DUP": 108102,
+   "any_gene_hit": 215671
+  },
+  "loo_USP7_HAPSTR1": {
+   "DEL": 140897,
+   "DUP": 108035,
+   "any_gene_hit": 215654
+  },
+  "loo_16p13_11_BP1_BP3": {
+   "DEL": 140798,
+   "DUP": 107409,
+   "any_gene_hit": 215138
+  },
+  "loo_16p12_2_BP2_BP3": {
+   "DEL": 140705,
+   "DUP": 107943,
+   "any_gene_hit": 215431
+  },
+  "loo_16p11_2_BP1_BP3_1": {
+   "DEL": 140898,
+   "DUP": 107984,
+   "any_gene_hit": 215623
+  },
+  "loo_16p11_2_BP1_BP3_2": {
+   "DEL": 140857,
+   "DUP": 108102,
+   "any_gene_hit": 215672
+  },
+  "loo_16p11_2_BP4_BP5": {
+   "DEL": 140806,
+   "DUP": 107985,
+   "any_gene_hit": 215557
+  },
+  "loo_22q11_21_A_D": {
+   "DEL": 140864,
+   "DUP": 107685,
+   "any_gene_hit": 215395
+  },
+  "loo_22q13_3_SHANK3": {
+   "DEL": 140867,
+   "DUP": 108097,
+   "any_gene_hit": 215677
+  },
+  "no_loci": {
+   "DEL": 138381,
+   "DUP": 103056,
+   "any_gene_hit": 210221
+  }
+ },
+ "minutes": 34.57186623811722
+}

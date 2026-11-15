@@ -1,0 +1,43 @@
+{
+ "pgc_ukbb_rows": 346827,
+ "pgc_ukbb_unique_IID": 346827,
+ "pgc_ukbb_by_AFF": {
+  "1": 317315,
+  "2": 29512
+ },
+ "linked_to_eid": 346769,
+ "after_duplicate_withdrawn": 346769,
+ "with_ukb_fields": 346769,
+ "exclusions": {
+  "sex_chromosome_aneuploidy_22019": 432,
+  "het_missing_outlier_22027": 0,
+  "reported_vs_genetic_sex_mismatch": 135,
+  "missing_age_batch_or_sex": 0,
+  "missing_PCs": 0
+ },
+ "analysis_pool": 346202,
+ "N_height": 345169,
+ "N_height_by_sex": {
+  "female": 186810,
+  "male": 158359
+ },
+ "N_bmi": 344769,
+ "N_bmi_by_sex": {
+  "female": 186592,
+  "male": 158177
+ },
+ "N_by_array": {
+  "UKBAxiom": 307639,
+  "UKBiLEVE": 38563
+ },
+ "N_batches": 106,
+ "N_by_pgc_ancestry": {
+  "EUR": 322856,
+  "ASN": 13991,
+  "AFR": 6577,
+  "MIX": 2315,
+  "LAT": 416,
+  "NAT": 47
+ },
+ "N_pgc_psychiatric_cases_AFF2": 29445
+}

@@ -1,0 +1,122 @@
+{
+ "cohort": "UKBB_via_AoU_path_TEST",
+ "note": "Config-swap plumbing test: 5,000 UKBB people re-encoded as AoU inputs (GATK-SV VCF, OMOP rows, ancestry file); every step identical to aou_workbench.json except paths, BigQuery replaced by --measurements_csv, and nrep 50.",
+ "results_dir": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/aou_path_test",
+ "export_dir": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/aou_path_test_export",
+ "min_cell": 20,
+ "pheno_table": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/aou_path_test/aou_pheno_std.tsv",
+ "cnv_table": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/aou_path_test/aou_srwgs_sv.cnv",
+ "prep_commands": [
+  [
+   "aou_sv_to_cnv.py",
+   "--vcf",
+   "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/aou_path_test/sv_test.vcf.gz",
+   "--out",
+   "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/aou_path_test/aou_srwgs_sv.cnv",
+   "--write_samples",
+   "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/aou_path_test/sv_samples.txt",
+   "--min_size",
+   "10000",
+   "--max_freq",
+   "0.10",
+   "--chroms",
+   "1-22"
+  ],
+  [
+   "aou_pheno_extract.py",
+   "--measurements_csv",
+   "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/aou_path_test/measurements_test.csv",
+   "--ancestry",
+   "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/aou_path_test/ancestry_test.tsv",
+   "--keep_samples",
+   "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/aou_path_test/sv_samples.txt",
+   "--out",
+   "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/aou_path_test/aou_pheno_std.tsv",
+   "--summary",
+   "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/aou_path_test/aou_pheno_summary.json",
+   "--n_pcs",
+   "16"
+  ]
+ ],
+ "traits": {
+  "height": {
+   "column": "height_rint",
+   "numeric": [
+    "age",
+    "age2",
+    "PC1",
+    "PC2",
+    "PC3",
+    "PC4",
+    "PC5",
+    "PC6",
+    "PC7",
+    "PC8",
+    "PC9",
+    "PC10",
+    "PC11",
+    "PC12",
+    "PC13",
+    "PC14",
+    "PC15",
+    "PC16"
+   ],
+   "factors": [
+    "sex"
+   ],
+   "twas": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/twas/height.txt"
+  },
+  "bmi": {
+   "column": "bmi_rint",
+   "numeric": [
+    "age_bmi",
+    "age_bmi2",
+    "PC1",
+    "PC2",
+    "PC3",
+    "PC4",
+    "PC5",
+    "PC6",
+    "PC7",
+    "PC8",
+    "PC9",
+    "PC10",
+    "PC11",
+    "PC12",
+    "PC13",
+    "PC14",
+    "PC15",
+    "PC16"
+   ],
+   "factors": [
+    "sex"
+   ],
+   "twas": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/twas/bmi.txt"
+  }
+ },
+ "gwas": {
+  "chroms": "1-22",
+  "min_ncnv": 21,
+  "freq_max": 0.02,
+  "bp_dir": null,
+  "known_loci": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/omar_alleles/gws_all_cnvs_known_loci.txt",
+  "segdups": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/segDups.bed",
+  "filtered_cnv_beds": null
+ },
+ "alleles": {
+  "resources": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/omar_alleles",
+  "omar_matrix": null
+ },
+ "axes": {
+  "panels": [
+   "gtex_nonbrain"
+  ],
+  "nrep": 50,
+  "seed": 2026,
+  "exons": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/hg38_refGene_20200708.exon.txt",
+  "gene_cov": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/gene_covariates.tsv",
+  "loci": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/omar_loci_all.tsv",
+  "loo_runs": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/loo2_runs.tsv",
+  "workers": 1
+ }
+}

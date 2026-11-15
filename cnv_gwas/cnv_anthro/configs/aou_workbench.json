@@ -1,0 +1,122 @@
+{
+ "cohort": "AllOfUs",
+ "note": "Run inside the AoU Researcher Workbench (Controlled Tier). Fill the two FILL_FROM_DATA_DICTIONARY paths from 'How the All of Us Genomic data are organized' (SV VCF, ancestry_preds.tsv) for the CDR version of the workspace. Individual-level files stay on the persistent disk / workspace bucket; only export_dir content may leave, after the 1-20 small-cell rule.",
+ "results_dir": "${HOME}/cnv_anthro_run/results",
+ "export_dir": "${HOME}/cnv_anthro_run/export_aggregate",
+ "min_cell": 20,
+ "pheno_table": "${HOME}/cnv_anthro_run/data/aou_pheno_std.tsv",
+ "cnv_table": "${HOME}/cnv_anthro_run/data/aou_srwgs_sv.cnv",
+ "prep_commands": [
+  [
+   "aou_sv_to_cnv.py",
+   "--vcf",
+   "FILL_FROM_DATA_DICTIONARY:gs://.../sv/<joint-called SV vcf.gz>",
+   "--out",
+   "${HOME}/cnv_anthro_run/data/aou_srwgs_sv.cnv",
+   "--write_samples",
+   "${HOME}/cnv_anthro_run/data/sv_samples.txt",
+   "--min_size",
+   "10000",
+   "--max_freq",
+   "0.10",
+   "--chroms",
+   "1-22"
+  ],
+  [
+   "aou_pheno_extract.py",
+   "--ancestry",
+   "FILL_FROM_DATA_DICTIONARY:gs://.../ancestry_preds.tsv (copy locally first)",
+   "--keep_samples",
+   "${HOME}/cnv_anthro_run/data/sv_samples.txt",
+   "--out",
+   "${HOME}/cnv_anthro_run/data/aou_pheno_std.tsv",
+   "--summary",
+   "${HOME}/cnv_anthro_run/results/aou_pheno_summary.json",
+   "--n_pcs",
+   "16"
+  ]
+ ],
+ "traits": {
+  "height": {
+   "column": "height_rint",
+   "numeric": [
+    "age",
+    "age2",
+    "PC1",
+    "PC2",
+    "PC3",
+    "PC4",
+    "PC5",
+    "PC6",
+    "PC7",
+    "PC8",
+    "PC9",
+    "PC10",
+    "PC11",
+    "PC12",
+    "PC13",
+    "PC14",
+    "PC15",
+    "PC16"
+   ],
+   "factors": [
+    "sex"
+   ],
+   "twas": "../resources/twas/height.txt"
+  },
+  "bmi": {
+   "column": "bmi_rint",
+   "numeric": [
+    "age_bmi",
+    "age_bmi2",
+    "PC1",
+    "PC2",
+    "PC3",
+    "PC4",
+    "PC5",
+    "PC6",
+    "PC7",
+    "PC8",
+    "PC9",
+    "PC10",
+    "PC11",
+    "PC12",
+    "PC13",
+    "PC14",
+    "PC15",
+    "PC16"
+   ],
+   "factors": [
+    "sex"
+   ],
+   "twas": "../resources/twas/bmi.txt"
+  }
+ },
+ "gwas": {
+  "chroms": "1-22",
+  "min_ncnv": 21,
+  "freq_max": 0.02,
+  "bp_dir": null,
+  "known_loci": "../resources/omar_alleles/gws_all_cnvs_known_loci.txt",
+  "segdups": "../resources/segDups.bed",
+  "filtered_cnv_beds": null
+ },
+ "alleles": {
+  "resources": "../resources/omar_alleles",
+  "omar_matrix": null
+ },
+ "axes": {
+  "panels": [
+   "gtex_nonbrain",
+   "brain",
+   "all"
+  ],
+  "nrep": 2000,
+  "seed": 2026,
+  "exons": "../resources/conga/hg38_refGene_20200708.exon.txt",
+  "gene_cov": "../resources/conga/gene_covariates.tsv",
+  "loci": "../resources/conga/omar_loci_all.tsv",
+  "loo_runs": "../resources/conga/loo2_runs.tsv",
+  "workers": 1
+ }
+}

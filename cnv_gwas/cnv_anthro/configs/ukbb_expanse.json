@@ -1,0 +1,101 @@
+{
+ "cohort": "UKBB",
+ "note": "UK Biobank calls from the PGC CNV Freeze_2024 (XD, dataset 'ukbb', Axiom platform). Expanse paths.",
+ "results_dir": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/pipeline_ukbb",
+ "export_dir": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/export_ukbb",
+ "min_cell": 20,
+ "pheno_table": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/ukbb_pheno_std.tsv",
+ "cnv_table": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/ukbb_pgc_xd.cnv",
+ "prep_commands": [
+  [
+   "prep_ukbb.py",
+   "--pgc_phe",
+   "/expanse/projects/sebat1/oshanta/home/IndividualDisorder/Freeze_2024/inputs/data_10perc/ALL/XD/all_platforms_10kb_10probes_XD_ALL.phe",
+   "--pgc_cnv",
+   "/expanse/projects/sebat1/oshanta/home/IndividualDisorder/Freeze_2024/inputs/data_10perc/ALL/XD/all_platforms_10kb_10probes_XD_ALL.cnv",
+   "--link",
+   "/expanse/projects/sebat1/msacks/UKBB/2024/genomatrix_UKBB_2025.csv",
+   "--fields",
+   "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/ukb42720_anthro_fields.tsv",
+   "--out",
+   "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/ukbb_pheno_std.tsv",
+   "--out_cnv",
+   "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/data/ukbb_pgc_xd.cnv",
+   "--summary",
+   "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/results/ukbb_pheno_summary.json"
+  ]
+ ],
+ "traits": {
+  "height": {
+   "column": "height_rint",
+   "numeric": [
+    "age",
+    "age2",
+    "PC1",
+    "PC2",
+    "PC3",
+    "PC4",
+    "PC5",
+    "PC6",
+    "PC7",
+    "PC8",
+    "PC9",
+    "PC10"
+   ],
+   "factors": [
+    "sex",
+    "batch"
+   ],
+   "twas": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/twas/height.txt"
+  },
+  "bmi": {
+   "column": "bmi_rint",
+   "numeric": [
+    "age",
+    "age2",
+    "PC1",
+    "PC2",
+    "PC3",
+    "PC4",
+    "PC5",
+    "PC6",
+    "PC7",
+    "PC8",
+    "PC9",
+    "PC10"
+   ],
+   "factors": [
+    "sex",
+    "batch"
+   ],
+   "twas": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/twas/bmi.txt"
+  }
+ },
+ "gwas": {
+  "chroms": "1-23",
+  "min_ncnv": 12,
+  "freq_max": 0.02,
+  "bp_dir": "/expanse/projects/sebat1/oshanta/home/IndividualDisorder/Freeze_2024/inputs/bp_files",
+  "known_loci": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/omar_alleles/gws_all_cnvs_known_loci.txt",
+  "segdups": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/segDups.bed",
+  "filtered_cnv_beds": "/expanse/projects/sebat1/oshanta/home/CrossDisorder/Freeze_2024/inputs/data_10perc/filteredCNVs/filter.AB.TELE.CENTRO.bed,/expanse/projects/sebat1/oshanta/home/CrossDisorder/Freeze_2024/inputs/data_10perc/filteredCNVs/filter.CONSENTYPE.bed,/expanse/projects/sebat1/oshanta/home/CrossDisorder/Freeze_2024/inputs/data_10perc/filteredCNVs/filter.SEGDUP.bed,/expanse/projects/sebat1/oshanta/home/CrossDisorder/Freeze_2024/inputs/data_10perc/filteredCNVs/filter.FREQUENCY_10percent.bed,/expanse/projects/sebat1/oshanta/home/CrossDisorder/Freeze_2024/inputs/data_10perc/filteredCNVs/filter.FREQUENCY_CROSS_PF.bed"
+ },
+ "alleles": {
+  "resources": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/omar_alleles",
+  "omar_matrix": "/expanse/projects/sebat1/oshanta/home/IndividualDisorder/Freeze_2024/inputs/results/r2_burden_noSex/wdir/platform/XD/noFam_Axiom/genotype_allele.indiv"
+ },
+ "axes": {
+  "panels": [
+   "gtex_nonbrain",
+   "brain",
+   "all"
+  ],
+  "nrep": 2000,
+  "seed": 2026,
+  "exons": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/hg38_refGene_20200708.exon.txt",
+  "gene_cov": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/gene_covariates.tsv",
+  "loci": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/omar_loci_all.tsv",
+  "loo_runs": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/loo2_runs.tsv",
+  "workers": 1
+ }
+}

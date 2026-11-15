@@ -1,0 +1,153 @@
+{
+ "trait": "bmi_rint",
+ "N": 344769,
+ "covariate_columns": 119,
+ "genes_in_circle": 26986,
+ "panels": "brain",
+ "n_panels": 10,
+ "panel_list": [
+  "CMC",
+  "GTEX_Brain_Caudate_basal_ganglia",
+  "GTEX_Brain_Cerebellar_Hemisphere",
+  "GTEX_Brain_Cerebellum",
+  "GTEX_Brain_Cortex",
+  "GTEX_Brain_Frontal_Cortex_BA9",
+  "GTEX_Brain_Hippocampus",
+  "GTEX_Brain_Hypothalamus",
+  "GTEX_Brain_Nucleus_accumbens_basal_ganglia",
+  "GTEX_Brain_Putamen_basal_ganglia"
+ ],
+ "genes_with_twas_z": 2873,
+ "genes_z_gt3": 74,
+ "genes_z_lt_m3": 70,
+ "genes_shet_gt_cut": 5791,
+ "calls_DEL": 260622,
+ "calls_DUP": 149133,
+ "calls_dropped_per_run": {
+  "full": 0,
+  "loo_1q21_1_TAR_BP1_BP3": 727,
+  "loo_1q21_1": 213,
+  "loo_SMYD3": 455,
+  "loo_NRXN1": 520,
+  "loo_3q29": 12,
+  "loo_7q11_23_WBS": 18,
+  "loo_ASTN2": 310,
+  "loo_15q11_2_13_1_BP1_BP3": 3167,
+  "loo_15q13_1_13_3_BP3_BP5_1": 3134,
+  "loo_15q13_1_13_3_BP3_BP5_2": 57,
+  "loo_USP7_HAPSTR1": 99,
+  "loo_16p13_11_BP1_BP3": 1042,
+  "loo_16p12_2_BP2_BP3": 475,
+  "loo_16p11_2_BP1_BP3_1": 142,
+  "loo_16p11_2_BP1_BP3_2": 58,
+  "loo_16p11_2_BP4_BP5": 276,
+  "loo_22q11_21_A_D": 574,
+  "loo_22q13_3_SHANK3": 115,
+  "no_loci": 11394
+ },
+ "null_burden_dev_median": 0.051841432440160706,
+ "null_burden_dev_max": 0.09999999999999987,
+ "carriers_per_run": {
+  "full": {
+   "DEL": 140737,
+   "DUP": 107966,
+   "any_gene_hit": 215454
+  },
+  "loo_1q21_1_TAR_BP1_BP3": {
+   "DEL": 140519,
+   "DUP": 107658,
+   "any_gene_hit": 215100
+  },
+  "loo_1q21_1": {
+   "DEL": 140677,
+   "DUP": 107865,
+   "any_gene_hit": 215336
+  },
+  "loo_SMYD3": {
+   "DEL": 140588,
+   "DUP": 107905,
+   "any_gene_hit": 215294
+  },
+  "loo_NRXN1": {
+   "DEL": 140427,
+   "DUP": 107961,
+   "any_gene_hit": 215229
+  },
+  "loo_3q29": {
+   "DEL": 140728,
+   "DUP": 107963,
+   "any_gene_hit": 215445
+  },
+  "loo_7q11_23_WBS": {
+   "DEL": 140736,
+   "DUP": 107956,
+   "any_gene_hit": 215447
+  },
+  "loo_ASTN2": {
+   "DEL": 140587,
+   "DUP": 107942,
+   "any_gene_hit": 215321
+  },
+  "loo_15q11_2_13_1_BP1_BP3": {
+   "DEL": 139686,
+   "DUP": 106595,
+   "any_gene_hit": 213646
+  },
+  "loo_15q13_1_13_3_BP3_BP5_1": {
+   "DEL": 140721,
+   "DUP": 106411,
+   "any_gene_hit": 214370
+  },
+  "loo_15q13_1_13_3_BP3_BP5_2": {
+   "DEL": 140694,
+   "DUP": 107966,
+   "any_gene_hit": 215419
+  },
+  "loo_USP7_HAPSTR1": {
+   "DEL": 140735,
+   "DUP": 107899,
+   "any_gene_hit": 215402
+  },
+  "loo_16p13_11_BP1_BP3": {
+   "DEL": 140637,
+   "DUP": 107274,
+   "any_gene_hit": 214888
+  },
+  "loo_16p12_2_BP2_BP3": {
+   "DEL": 140543,
+   "DUP": 107807,
+   "any_gene_hit": 215179
+  },
+  "loo_16p11_2_BP1_BP3_1": {
+   "DEL": 140736,
+   "DUP": 107848,
+   "any_gene_hit": 215371
+  },
+  "loo_16p11_2_BP1_BP3_2": {
+   "DEL": 140695,
+   "DUP": 107966,
+   "any_gene_hit": 215420
+  },
+  "loo_16p11_2_BP4_BP5": {
+   "DEL": 140645,
+   "DUP": 107849,
+   "any_gene_hit": 215306
+  },
+  "loo_22q11_21_A_D": {
+   "DEL": 140703,
+   "DUP": 107549,
+   "any_gene_hit": 215144
+  },
+  "loo_22q13_3_SHANK3": {
+   "DEL": 140705,
+   "DUP": 107961,
+   "any_gene_hit": 215425
+  },
+  "no_loci": {
+   "DEL": 138225,
+   "DUP": 102925,
+   "any_gene_hit": 209978
+  }
+ },
+ "minutes": 40.42200404405594
+}

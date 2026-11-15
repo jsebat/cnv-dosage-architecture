@@ -1,0 +1,38 @@
+{
+ "N": 345169,
+ "k": 119,
+ "naive_sec_per_probe_del": 2.974994661808014,
+ "naive_sec_per_probe_dup": 3.025066682100296,
+ "gwas_probes_compared": 400,
+ "gwas_ncnv_mismatch": 0,
+ "gwas_max_rel_diff_beta": 4.402187233208032e-06,
+ "gwas_max_rel_diff_se": 4.423842745780978e-06,
+ "gwas_max_abs_diff_log10p": 1.7692405752667284e-06,
+ "axes_rundata_setup_sec": 0.12066483497619629,
+ "axes": [
+  {
+   "shift": 0,
+   "max_abs_diff_t": 2.665867526729926e-12,
+   "sec_fast": 0.018046855926513672,
+   "sec_ref": 3.4985642433166504
+  },
+  {
+   "shift": 24609,
+   "max_abs_diff_t": 2.3714363805993344e-12,
+   "sec_fast": 0.017691612243652344,
+   "sec_ref": 3.4906997680664062
+  },
+  {
+   "shift": 16618,
+   "max_abs_diff_t": 2.660094367001875e-12,
+   "sec_fast": 0.016850948333740234,
+   "sec_ref": 3.484589099884033
+  },
+  {
+   "shift": 18094,
+   "max_abs_diff_t": 1.27720056752878e-12,
+   "sec_fast": 0.016824960708618164,
+   "sec_ref": 3.4941723346710205
+  }
+ ]
+}
