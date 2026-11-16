@@ -24,8 +24,15 @@ BINS = [(0, 0, "0"), (1, 1, "1"), (2, 2, "2"), (3, 4, "3-4"), (5, 9, "5-9"), (10
 
 
 def ols(yr, X, Q, names):
-    Xr = X - Q @ (Q.T @ X); A = Xr.T @ Xr; b = np.linalg.solve(A, Xr.T @ yr)
-    df = len(yr) - Q.shape[1] - X.shape[1]; rss = yr @ yr - b @ (Xr.T @ yr); se = np.sqrt(np.diag(np.linalg.inv(A)) * rss / df)
+    # Aliased columns (e.g. no hit-gene carriers on an arm in a restricted loci subset) are dropped and reported as NaN instead of
+    # making A singular; a column is kept only if it raises the rank of the residualised design (in order).
+    Xr = X - Q @ (Q.T @ X); keep = []
+    for j in range(Xr.shape[1]):
+        if np.linalg.matrix_rank(Xr[:, keep + [j]]) == len(keep) + 1:
+            keep.append(j)
+    K = Xr[:, keep]; A = K.T @ K; bk = np.linalg.solve(A, K.T @ yr)
+    df = len(yr) - Q.shape[1] - len(keep); rss = yr @ yr - bk @ (K.T @ yr); sek = np.sqrt(np.diag(np.linalg.inv(A)) * rss / df)
+    b = np.full(X.shape[1], np.nan); se = np.full(X.shape[1], np.nan); b[keep] = bk; se[keep] = sek
     return pd.DataFrame({"term": names, "beta": b, "SE": se, "T": b / se, "P": 2 * stats.t.sf(np.abs(b / se), df)}), rss, df
 
 
@@ -105,13 +112,13 @@ def main():
     con = lin + [(f["HC_DEL"] > 0).astype(float), (f["HC_DUP"] > 0).astype(float), np.log1p(f["HC_DEL"]), np.log1p(f["HC_DUP"])]
     nc = nl + ["anyHC_DEL", "anyHC_DUP", "log1pHC_DEL", "log1pHC_DUP"]
     T2, rss2, df2 = ols(yr, np.column_stack(con), Q, nc)
-    Fc = ((rss1 - rss2) / 4) / (rss2 / df2); P_concave = stats.f.sf(Fc, 4, df2)
+    k12 = max(df1 - df2, 1); Fc = ((rss1 - rss2) / k12) / (rss2 / df2); P_concave = stats.f.sf(Fc, k12, df2)   # k12 = 4 unless terms aliased
     # same models without the multi terms: does concavity alone fit?
     T0, rss0, df0 = ols(yr, np.column_stack(Xb + [f["HC_DEL"], f["HC_DUP"]]), Q, base + ["HC_DEL", "HC_DUP"])
     T0c, rss0c, df0c = ols(yr, np.column_stack(Xb + [f["HC_DEL"], f["HC_DUP"], (f["HC_DEL"] > 0).astype(float), (f["HC_DUP"] > 0).astype(float),
                                                     np.log1p(f["HC_DEL"]), np.log1p(f["HC_DUP"])]), Q,
                            base + ["HC_DEL", "HC_DUP", "anyHC_DEL", "anyHC_DUP", "log1pHC_DEL", "log1pHC_DUP"])
-    F0 = ((rss0 - rss0c) / 4) / (rss0c / df0c)
+    k0 = max(df0 - df0c, 1); F0 = ((rss0 - rss0c) / k0) / (rss0c / df0c)
     # 3. single hit vs constraint count (Jon 2026-11-15): is the duplication-axis constraint effect a single hit? Hit = a top-5% s_het
     #    or ClinGen haploinsufficient (score 2-3) gene on that arm, as in the locus-level single-hit test (yaxis_monogenic, top5_or_hi).
     q95 = float(np.nanquantile(gc.shet.to_numpy(float), 0.95))
@@ -146,7 +153,7 @@ def main():
                      Th3.assign(model="hit: slopes by hit status (mirror x hit, HC x hit)")])
     out.to_csv(os.path.join(a.out, "additivity_models.tsv"), sep="\t", index=False, float_format="%.6g")
     info.update(F_concavity_given_multi=float(Fc), P_concavity_given_multi=float(P_concave),
-                F_concavity_no_multi=float(F0), P_concavity_no_multi=float(stats.f.sf(F0, 4, df0c)))
+                F_concavity_no_multi=float(F0), P_concavity_no_multi=float(stats.f.sf(F0, k0, df0c)))
     json.dump(info, open(os.path.join(a.out, "run_info.json"), "w"), indent=1)
     pd.set_option("display.width", 200)
     print(json.dumps(info, indent=1)); print(out[out.term.str.contains("HC|multi")].to_string())
