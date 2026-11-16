@@ -29,6 +29,7 @@ def main():
         for lab, d in C:
             vd = os.path.join(d, v)
             if not os.path.exists(os.path.join(vd, "null_runs.npz")):
+                print(f"WARNING: {vd} has no null_runs.npz; variant {v} skipped (rerun that cohort with the current conga_grid_qt.py)", flush=True)
                 break
             info = json.load(open(os.path.join(vd, "run_info.json"))); N[lab] = float(info["N"]); perms.add((info.get("nrep"), info.get("perms_sha1")))
             obs[lab] = pd.read_csv(os.path.join(vd, "observed_terms.tsv"), sep="\t").set_index(["run", "readout"]).t

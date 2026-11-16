@@ -26,10 +26,10 @@ def safe(n):
 
 def plan():
     """(destination under results/all, source folder under RES) for every UKBB piece the figures use."""
-    P = [("locus_effects", "export_ukbb_strata/all/locus_effects")]           # CNV GWAS, S9 alleles, growth loci: the UKBB stratified export
-    for t in ["height", "bmi"]:
-        P.append((f"taskA_gwas/{t}", f"export_ukbb_strata/all/taskA_gwas/{t}"))
-        P.append((f"taskA_alleles/{t}", f"export_ukbb_strata/all/taskA_alleles/{t}"))
+    P = [("locus_effects", "pipeline_ukbb_strata/all/locus_effects")]        # CNV GWAS, S9 alleles, growth loci: UKBB stratified run, stratum all
+    for t in ["height", "bmi"]:                                                # (raw results; exported below with everything else)
+        P.append((f"taskA_gwas/{t}", f"pipeline_ukbb_strata/all/taskA_gwas/{t}"))
+        P.append((f"taskA_alleles/{t}", f"pipeline_ukbb_strata/all/taskA_alleles/{t}"))
     for t in ["height", "bmi"]:
         P.append((f"burden/{t}", f"dup_burden_2026-11-15/{t}"))                                         # Fig. 2A-B, 3O-P
         P.append((f"additivity/{t}/all", f"additivity_2026-11-15/{t}"))                                  # Fig. 2I-J

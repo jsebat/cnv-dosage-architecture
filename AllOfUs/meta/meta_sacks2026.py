@@ -194,7 +194,9 @@ def grid(C, out, code):
             print("skip (missing in a cohort):", o); continue
         os.makedirs(os.path.dirname(o), exist_ok=True)
         subprocess.run([sys.executable, "meta_grid.py", "--cohort", f"UKBB={u}", "--cohort", f"AoU={a}", "--out", o], check=True, cwd=code)
-        d = pd.read_csv(o, sep="\t")
+        d = pd.read_csv(o, sep="\t") if os.path.getsize(o) > 1 else pd.DataFrame()
+        if not len(d):
+            print(f"WARNING {o}: no variant could be meta-analysed (missing null_runs.npz in a cohort)"); continue
         names = {}
         for vd in os.listdir(u):
             f = os.path.join(u, vd, "run_info.json")
