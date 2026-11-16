@@ -348,7 +348,7 @@ AoU rules (Dissemination Policy, egress alert and large-download pages; checked 
 
 ### C1. Meta-analysis (Expanse)
 
-The UKBB reference export is already unpacked on Expanse. Submit the job; it is small (8 cores, ≤ 4 h):
+The UKBB reference export is already unpacked on Expanse. Submit the job; it is small (8 cores; the self-test, UKBB against itself, took 13 min and 0.9 GB):
 ```bash
 REPO=/expanse/projects/sebat1/$USER/cnv-growth-bmi/AllOfUs      # your clone, at the current cnv-gwas head
 T=/expanse/projects/sebat1/jsebat/sacks2026_aou/aou_results/aou_sacks2026_export_<date>.tar.gz
