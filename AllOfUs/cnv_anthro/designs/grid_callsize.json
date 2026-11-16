@@ -1,0 +1,158 @@
+[
+ {
+  "name": "size5:g:all:c3:sig:scaled",
+  "DEL": [
+   "n_all",
+   "L5~g:all:c3:sig:scaled",
+   "S5~g:all:c3:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "L5~g:all:c3:sig:scaled",
+   "S5~g:all:c3:sig:scaled"
+  ]
+ },
+ {
+  "name": "size5:g:all:c3:uns:scaled",
+  "DEL": [
+   "n_all",
+   "L5~g:all:c3:uns:scaled",
+   "S5~g:all:c3:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "L5~g:all:c3:uns:scaled",
+   "S5~g:all:c3:uns:scaled"
+  ]
+ },
+ {
+  "name": "size5:g:all:sum:sig:scaled",
+  "DEL": [
+   "n_all",
+   "L5~g:all:sum:sig:scaled",
+   "S5~g:all:sum:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "L5~g:all:sum:sig:scaled",
+   "S5~g:all:sum:sig:scaled"
+  ]
+ },
+ {
+  "name": "size5:g:all:sum:uns:scaled",
+  "DEL": [
+   "n_all",
+   "L5~g:all:sum:uns:scaled",
+   "S5~g:all:sum:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "L5~g:all:sum:uns:scaled",
+   "S5~g:all:sum:uns:scaled"
+  ]
+ },
+ {
+  "name": "size5:g:HC:c3:sig:mean",
+  "DEL": [
+   "n_all",
+   "L5~g:HC:c3:sig:mean",
+   "S5~g:HC:c3:sig:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "L5~g:HC:c3:sig:mean",
+   "S5~g:HC:c3:sig:mean"
+  ]
+ },
+ {
+  "name": "size5:g:HC:c3:uns:mean",
+  "DEL": [
+   "n_all",
+   "L5~g:HC:c3:uns:mean",
+   "S5~g:HC:c3:uns:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "L5~g:HC:c3:uns:mean",
+   "S5~g:HC:c3:uns:mean"
+  ]
+ },
+ {
+  "name": "size10:g:all:c3:sig:scaled",
+  "DEL": [
+   "n_all",
+   "L10~g:all:c3:sig:scaled",
+   "S10~g:all:c3:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "L10~g:all:c3:sig:scaled",
+   "S10~g:all:c3:sig:scaled"
+  ]
+ },
+ {
+  "name": "size10:g:all:c3:uns:scaled",
+  "DEL": [
+   "n_all",
+   "L10~g:all:c3:uns:scaled",
+   "S10~g:all:c3:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "L10~g:all:c3:uns:scaled",
+   "S10~g:all:c3:uns:scaled"
+  ]
+ },
+ {
+  "name": "size10:g:all:sum:sig:scaled",
+  "DEL": [
+   "n_all",
+   "L10~g:all:sum:sig:scaled",
+   "S10~g:all:sum:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "L10~g:all:sum:sig:scaled",
+   "S10~g:all:sum:sig:scaled"
+  ]
+ },
+ {
+  "name": "size10:g:all:sum:uns:scaled",
+  "DEL": [
+   "n_all",
+   "L10~g:all:sum:uns:scaled",
+   "S10~g:all:sum:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "L10~g:all:sum:uns:scaled",
+   "S10~g:all:sum:uns:scaled"
+  ]
+ },
+ {
+  "name": "size10:g:HC:c3:sig:mean",
+  "DEL": [
+   "n_all",
+   "L10~g:HC:c3:sig:mean",
+   "S10~g:HC:c3:sig:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "L10~g:HC:c3:sig:mean",
+   "S10~g:HC:c3:sig:mean"
+  ]
+ },
+ {
+  "name": "size10:g:HC:c3:uns:mean",
+  "DEL": [
+   "n_all",
+   "L10~g:HC:c3:uns:mean",
+   "S10~g:HC:c3:uns:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "L10~g:HC:c3:uns:mean",
+   "S10~g:HC:c3:uns:mean"
+  ]
+ }
+]

@@ -1,0 +1,172 @@
+[
+ {
+  "name": "height_A0_none",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "pres:n95HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "pres:n95HI"
+  ]
+ },
+ {
+  "name": "height_A1_broadCount",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H",
+   "pres:n95HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H",
+   "pres:n95HI"
+  ]
+ },
+ {
+  "name": "height_A2_tertileCounts",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "sh_mid",
+   "sh_high",
+   "pres:n95HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "sh_mid",
+   "sh_high",
+   "pres:n95HI"
+  ]
+ },
+ {
+  "name": "height_A3_top5Count",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "n95",
+   "pres:n95HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "n95",
+   "pres:n95HI"
+  ]
+ },
+ {
+  "name": "height_B0_none",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H"
+  ]
+ },
+ {
+  "name": "height_B2_unionCount",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H",
+   "n95HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H",
+   "n95HI"
+  ]
+ },
+ {
+  "name": "height_B3_top5Pres",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H",
+   "pres:n95"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H",
+   "pres:n95"
+  ]
+ },
+ {
+  "name": "height_B4_HIPres",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H",
+   "pres:HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H",
+   "pres:HI"
+  ]
+ },
+ {
+  "name": "height_B5_broadPres",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H",
+   "pres:none_H"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H",
+   "pres:none_H"
+  ]
+ },
+ {
+  "name": "height_C0_none",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled"
+  ]
+ },
+ {
+  "name": "height_C2_broadPres",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "pres:none_H"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "pres:none_H"
+  ]
+ },
+ {
+  "name": "height_C3_unionCount",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "n95HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "n95HI"
+  ]
+ }
+]

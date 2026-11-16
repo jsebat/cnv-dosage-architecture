@@ -1,0 +1,384 @@
+{
+ "cohort": "AllOfUs",
+ "note": "Sacks 2026 All of Us run (2026-11-16): CNV GWAS, alleles, growth-locus effects, genome-wide burden, univariate grid, call-size split, joint models (all CNVs + 4 carrier removals), additivity and axis scores, for height and BMI. Fill the two FILL_FROM_DATA_DICTIONARY paths. Every genome-shift null loads the UKBB shift file for the same trait, TWAS panel set and carrier subset (resources/shared_shifts), so the two cohorts can be meta-analysed replicate by replicate. Only export_dir content may leave the Workbench. See AllOfUs/HANDOFF_Milad.md.",
+ "results_dir": "${HOME}/cnv_anthro_run/results",
+ "export_dir": "${HOME}/cnv_anthro_run/export_aggregate",
+ "min_cell": 20,
+ "pheno_table": "${HOME}/cnv_anthro_run/data/aou_pheno_std.tsv",
+ "cnv_table": "${HOME}/cnv_anthro_run/data/aou_srwgs_sv.cnv",
+ "prep_commands": [
+  [
+   "aou_sv_to_cnv.py",
+   "--vcf",
+   "FILL_FROM_DATA_DICTIONARY:gs://.../sv/<joint-called SV vcf.gz>",
+   "--out",
+   "${HOME}/cnv_anthro_run/data/aou_srwgs_sv.cnv",
+   "--write_samples",
+   "${HOME}/cnv_anthro_run/data/sv_samples.txt",
+   "--min_size",
+   "10000",
+   "--max_freq",
+   "0.10",
+   "--chroms",
+   "1-22"
+  ],
+  [
+   "aou_pheno_extract.py",
+   "--ancestry",
+   "FILL_FROM_DATA_DICTIONARY:gs://.../ancestry_preds.tsv (copy locally first)",
+   "--keep_samples",
+   "${HOME}/cnv_anthro_run/data/sv_samples.txt",
+   "--out",
+   "${HOME}/cnv_anthro_run/data/aou_pheno_std.tsv",
+   "--summary",
+   "${HOME}/cnv_anthro_run/results/aou_pheno_summary.json",
+   "--n_pcs",
+   "16"
+  ]
+ ],
+ "traits": {
+  "height": {
+   "column": "height_rint",
+   "numeric": [
+    "age",
+    "age2",
+    "PC1",
+    "PC2",
+    "PC3",
+    "PC4",
+    "PC5",
+    "PC6",
+    "PC7",
+    "PC8",
+    "PC9",
+    "PC10",
+    "PC11",
+    "PC12",
+    "PC13",
+    "PC14",
+    "PC15",
+    "PC16"
+   ],
+   "factors": [
+    "sex"
+   ],
+   "twas": "../resources/twas/height.txt"
+  },
+  "bmi": {
+   "column": "bmi_rint",
+   "numeric": [
+    "age_bmi",
+    "age_bmi2",
+    "PC1",
+    "PC2",
+    "PC3",
+    "PC4",
+    "PC5",
+    "PC6",
+    "PC7",
+    "PC8",
+    "PC9",
+    "PC10",
+    "PC11",
+    "PC12",
+    "PC13",
+    "PC14",
+    "PC15",
+    "PC16"
+   ],
+   "factors": [
+    "sex"
+   ],
+   "twas": "../resources/twas/bmi.txt"
+  }
+ },
+ "gwas": {
+  "chroms": "1-22",
+  "min_ncnv": 21,
+  "freq_max": 0.02,
+  "bp_dir": null,
+  "known_loci": "../resources/omar_alleles/gws_all_cnvs_known_loci.txt",
+  "segdups": "../resources/segDups.bed",
+  "filtered_cnv_beds": null,
+  "ref_probes": "../resources/ukbb_ref_probes.tsv.gz"
+ },
+ "alleles": {
+  "resources": "../resources/omar_alleles",
+  "omar_matrix": null
+ },
+ "strata": {
+  "all": {},
+  "eur": {
+   "ancestry_pred": [
+    "eur"
+   ]
+  },
+  "afr": {
+   "ancestry_pred": [
+    "afr"
+   ]
+  },
+  "amr": {
+   "ancestry_pred": [
+    "amr"
+   ]
+  },
+  "eas": {
+   "ancestry_pred": [
+    "eas"
+   ]
+  },
+  "sas": {
+   "ancestry_pred": [
+    "sas"
+   ]
+  },
+  "mid": {
+   "ancestry_pred": [
+    "mid"
+   ]
+  },
+  "female": {
+   "sex": [
+    2
+   ]
+  },
+  "male": {
+   "sex": [
+    1
+   ]
+  }
+ },
+ "partitions": {
+  "sex": [
+   "female",
+   "male"
+  ],
+  "ancestry": [
+   "eur",
+   "afr",
+   "amr",
+   "eas",
+   "sas",
+   "mid"
+  ]
+ },
+ "loci": {
+  "file": "../resources/growth_loci/loci_for_effects.tsv",
+  "min_carriers": 2
+ },
+ "grid": {
+  "strata": [
+   "all"
+  ],
+  "jobs": 12,
+  "seed": 2026,
+  "require_shared_shifts": true,
+  "exons": "../resources/conga/hg38_refGene_20200708.exon.txt",
+  "gene_cov": "../resources/conga/gene_covariates.tsv",
+  "clingen": "../resources/conga/ClinGen_gene_curation_list_GRCh38.tsv",
+  "loci": "../resources/growth_loci/loci_sacks34.tsv",
+  "loo_runs": "../resources/growth_loci/loo_runs_sacks34.tsv",
+  "perms_file": "../resources/shared_shifts/{trait}_{panels}_all.npy",
+  "designs": [
+   {
+    "file": "designs/grid_univariate_adj.json",
+    "outname": "grid_univariate",
+    "panels": "gtex_nonbrain",
+    "nrep": 1000,
+    "loo_mode": "all",
+    "note": "UKBB growthloci_2026-11-15/grid (Fig. 2G, 2K; model figure E)"
+   },
+   {
+    "file": "designs/grid_callsize.json",
+    "outname": "grid_callsize",
+    "panels": "gtex_nonbrain",
+    "nrep": 1000,
+    "loo_mode": "all",
+    "note": "UKBB growthloci_2026-11-15/callsize (Fig. 2H)"
+   },
+   {
+    "file": "designs/joint_2026-11-15.json",
+    "outname": "joint_sacks34",
+    "traits": [
+     "height"
+    ],
+    "only": [
+     "height_selected"
+    ],
+    "panels": "gtex_nonbrain",
+    "nrep": 2000,
+    "loo_mode": "all_minor",
+    "major_loci": "16p11_2_BP4_BP5,16p11_2_BP1_BP3,22q11_21_A_D,15q11_2_BP1_BP2,1q21_1,16p13_11_BP1_BP2,17q12,17p12",
+    "note": "UKBB growthloci_2026-11-15/joint_sacks34 + joint_drivers_2026-11-15 (model figure F-G)"
+   },
+   {
+    "file": "designs/joint_2026-11-15.json",
+    "outname": "joint_sacks34",
+    "traits": [
+     "bmi"
+    ],
+    "only": [
+     "bmi_selected"
+    ],
+    "panels": "gtex_nonbrain",
+    "nrep": 2000,
+    "loo_mode": "all_minor",
+    "major_loci": "16p11_2_BP4_BP5,16p11_2_BP1_BP3,22q11_21_A_D,15q11_2_BP1_BP2,1q21_1,16p13_11_BP1_BP2,17q12,17p12",
+    "note": "as above, BMI"
+   },
+   {
+    "file": "designs/grid_univariate_adj.json",
+    "outname": "grid_univariate_bmi_allpanels",
+    "traits": [
+     "bmi"
+    ],
+    "panels": "all",
+    "nrep": 1000,
+    "loo_mode": "all",
+    "note": "BMI univariate grid on all 45 TWAS panels (Jon 2026-11-16); its UKBB counterpart still has to be run"
+   }
+  ]
+ },
+ "min_stratum_n": 1000,
+ "burden": {
+  "exons": "../resources/conga/hg38_refGene_20200708.exon.txt",
+  "gene_cov": "../resources/conga/gene_covariates.tsv",
+  "clingen": "../resources/conga/ClinGen_gene_curation_list_GRCh38.tsv",
+  "asym_loci": "../resources/growth_loci/asymmetric_molly13.tsv"
+ },
+ "joint": {
+  "strata": [
+   "all"
+  ],
+  "jobs": 5,
+  "nrep": 2000,
+  "major_loci": "16p11_2_BP4_BP5,16p11_2_BP1_BP3,22q11_21_A_D,15q11_2_BP1_BP2,1q21_1,16p13_11_BP1_BP2,17q12,17p12",
+  "asym_loci": "../resources/growth_loci/asymmetric_molly13.tsv",
+  "perms_file": "../resources/shared_shifts/{trait}_{panels}_{subset}.npy",
+  "runs": [
+   {
+    "name": "all",
+    "subset": "all",
+    "trait": "height",
+    "design": "designs/union_terms_2026-11-15.json",
+    "variant": "height_selected_union",
+    "panels": "gtex_nonbrain"
+   },
+   {
+    "name": "noUnionDUP",
+    "subset": "noUnionDUP",
+    "trait": "height",
+    "design": "designs/joint_2026-11-15.json",
+    "variant": "height_selected",
+    "panels": "gtex_nonbrain"
+   },
+   {
+    "name": "noUnionAny",
+    "subset": "noUnionAny",
+    "trait": "height",
+    "design": "designs/joint_2026-11-15.json",
+    "variant": "height_selected",
+    "panels": "gtex_nonbrain"
+   },
+   {
+    "name": "noAsym13",
+    "subset": "noAsym13",
+    "trait": "height",
+    "design": "designs/joint_2026-11-15.json",
+    "variant": "height_selected",
+    "panels": "gtex_nonbrain"
+   },
+   {
+    "name": "noUnionDUP_noAsym13",
+    "subset": "noUnionDUP_noAsym13",
+    "trait": "height",
+    "design": "designs/joint_2026-11-15.json",
+    "variant": "height_selected",
+    "panels": "gtex_nonbrain"
+   },
+   {
+    "name": "all",
+    "subset": "all",
+    "trait": "bmi",
+    "design": "designs/union_terms_bmi_fix_2026-11-15.json",
+    "variant": "bmi_selected_union",
+    "panels": "all"
+   },
+   {
+    "name": "noUnionDUP",
+    "subset": "noUnionDUP",
+    "trait": "bmi",
+    "design": "designs/bmi_union_strata_2026-11-16.json",
+    "variant": "bmi_selected_union_noDUPunion",
+    "panels": "all"
+   },
+   {
+    "name": "noUnionAny",
+    "subset": "noUnionAny",
+    "trait": "bmi",
+    "design": "designs/joint_2026-11-15.json",
+    "variant": "bmi_selected",
+    "panels": "all"
+   },
+   {
+    "name": "noAsym13",
+    "subset": "noAsym13",
+    "trait": "bmi",
+    "design": "designs/bmi_union_strata_2026-11-16.json",
+    "variant": "bmi_selected_union",
+    "panels": "all"
+   },
+   {
+    "name": "noUnionDUP_noAsym13",
+    "subset": "noUnionDUP_noAsym13",
+    "trait": "bmi",
+    "design": "designs/bmi_union_strata_2026-11-16.json",
+    "variant": "bmi_selected_union_noDUPunion",
+    "panels": "all"
+   }
+  ]
+ },
+ "figures": {
+  "strata": [
+   "all"
+  ],
+  "jobs": 6,
+  "exons": "../resources/conga/hg38_refGene_20200708.exon.txt",
+  "gene_cov": "../resources/conga/gene_covariates.tsv",
+  "clingen": "../resources/conga/ClinGen_gene_curation_list_GRCh38.tsv",
+  "phaplo": "../resources/Collins_rCNV_2022.dosage_sensitivity_scores.tsv",
+  "asym_loci": "../resources/growth_loci/asymmetric_molly13.tsv",
+  "mirror_loci": "../resources/growth_loci/mirror_molly21.tsv",
+  "sacks_loci": "../resources/growth_loci/loci_sacks34.tsv",
+  "scores": {
+   "design": "designs/joint_2026-11-15.json",
+   "variants": {
+    "height": [
+     "height_selected"
+    ],
+    "bmi": [
+     "bmi_selected"
+    ]
+   },
+   "panels": {
+    "height": "gtex_nonbrain",
+    "bmi": "gtex_nonbrain"
+   },
+   "folds": 5,
+   "seed": 2026
+  }
+ },
+ "axes": {
+  "panels": [
+   "gtex_nonbrain"
+  ],
+  "nrep": 2000,
+  "seed": 2026,
+  "exons": "../resources/conga/hg38_refGene_20200708.exon.txt",
+  "gene_cov": "../resources/conga/gene_covariates.tsv",
+  "loci": "../resources/conga/omar_loci_all.tsv",
+  "loo_runs": "../resources/conga/loo2_runs.tsv",
+  "workers": 1
+ }
+}

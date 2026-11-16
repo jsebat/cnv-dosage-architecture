@@ -1,0 +1,486 @@
+[
+ {
+  "name": "g:all:sum:sig:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:all:sum:sig:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:sum:sig:mean"
+  ]
+ },
+ {
+  "name": "g:all:sum:sig:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:all:sum:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:sum:sig:scaled"
+  ]
+ },
+ {
+  "name": "g:all:sum:uns:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:all:sum:uns:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:sum:uns:mean"
+  ]
+ },
+ {
+  "name": "g:all:sum:uns:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:all:sum:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:sum:uns:scaled"
+  ]
+ },
+ {
+  "name": "g:all:c1:sig:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c1:sig:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c1:sig:mean"
+  ]
+ },
+ {
+  "name": "g:all:c1:sig:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c1:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c1:sig:scaled"
+  ]
+ },
+ {
+  "name": "g:all:c1:uns:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c1:uns:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c1:uns:mean"
+  ]
+ },
+ {
+  "name": "g:all:c1:uns:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c1:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c1:uns:scaled"
+  ]
+ },
+ {
+  "name": "g:all:c2:sig:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c2:sig:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c2:sig:mean"
+  ]
+ },
+ {
+  "name": "g:all:c2:sig:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c2:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c2:sig:scaled"
+  ]
+ },
+ {
+  "name": "g:all:c2:uns:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c2:uns:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c2:uns:mean"
+  ]
+ },
+ {
+  "name": "g:all:c2:uns:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c2:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c2:uns:scaled"
+  ]
+ },
+ {
+  "name": "g:all:c3:sig:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c3:sig:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c3:sig:mean"
+  ]
+ },
+ {
+  "name": "g:all:c3:sig:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c3:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c3:sig:scaled"
+  ]
+ },
+ {
+  "name": "g:all:c3:uns:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c3:uns:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c3:uns:mean"
+  ]
+ },
+ {
+  "name": "g:all:c3:uns:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c3:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c3:uns:scaled"
+  ]
+ },
+ {
+  "name": "g:all:c4:sig:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c4:sig:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c4:sig:mean"
+  ]
+ },
+ {
+  "name": "g:all:c4:sig:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c4:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c4:sig:scaled"
+  ]
+ },
+ {
+  "name": "g:all:c4:uns:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c4:uns:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c4:uns:mean"
+  ]
+ },
+ {
+  "name": "g:all:c4:uns:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:all:c4:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c4:uns:scaled"
+  ]
+ },
+ {
+  "name": "g:HC:sum:sig:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:sig:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:sig:mean"
+  ]
+ },
+ {
+  "name": "g:HC:sum:sig:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:sig:scaled"
+  ]
+ },
+ {
+  "name": "g:HC:sum:uns:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:mean"
+  ]
+ },
+ {
+  "name": "g:HC:sum:uns:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled"
+  ]
+ },
+ {
+  "name": "g:HC:c1:sig:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c1:sig:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c1:sig:mean"
+  ]
+ },
+ {
+  "name": "g:HC:c1:sig:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c1:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c1:sig:scaled"
+  ]
+ },
+ {
+  "name": "g:HC:c1:uns:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c1:uns:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c1:uns:mean"
+  ]
+ },
+ {
+  "name": "g:HC:c1:uns:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c1:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c1:uns:scaled"
+  ]
+ },
+ {
+  "name": "g:HC:c2:sig:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c2:sig:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c2:sig:mean"
+  ]
+ },
+ {
+  "name": "g:HC:c2:sig:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c2:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c2:sig:scaled"
+  ]
+ },
+ {
+  "name": "g:HC:c2:uns:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c2:uns:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c2:uns:mean"
+  ]
+ },
+ {
+  "name": "g:HC:c2:uns:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c2:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c2:uns:scaled"
+  ]
+ },
+ {
+  "name": "g:HC:c3:sig:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c3:sig:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c3:sig:mean"
+  ]
+ },
+ {
+  "name": "g:HC:c3:sig:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c3:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c3:sig:scaled"
+  ]
+ },
+ {
+  "name": "g:HC:c3:uns:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c3:uns:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c3:uns:mean"
+  ]
+ },
+ {
+  "name": "g:HC:c3:uns:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c3:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c3:uns:scaled"
+  ]
+ },
+ {
+  "name": "g:HC:c4:sig:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:sig:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:sig:mean"
+  ]
+ },
+ {
+  "name": "g:HC:c4:sig:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:sig:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:sig:scaled"
+  ]
+ },
+ {
+  "name": "g:HC:c4:uns:mean|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean"
+  ]
+ },
+ {
+  "name": "g:HC:c4:uns:scaled|adj",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:scaled"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:scaled"
+  ]
+ },
+ {
+  "name": "none_H|adj",
+  "DEL": [
+   "n_all",
+   "none_H"
+  ],
+  "DUP": [
+   "n_all",
+   "none_H"
+  ]
+ },
+ {
+  "name": "n95|adj",
+  "DEL": [
+   "n_all",
+   "n95"
+  ],
+  "DUP": [
+   "n_all",
+   "n95"
+  ]
+ },
+ {
+  "name": "pres:n95|adj",
+  "DEL": [
+   "n_all",
+   "pres:n95"
+  ],
+  "DUP": [
+   "n_all",
+   "pres:n95"
+  ]
+ },
+ {
+  "name": "pres:n95HI|adj",
+  "DEL": [
+   "n_all",
+   "pres:n95HI"
+  ],
+  "DUP": [
+   "n_all",
+   "pres:n95HI"
+  ]
+ }
+]

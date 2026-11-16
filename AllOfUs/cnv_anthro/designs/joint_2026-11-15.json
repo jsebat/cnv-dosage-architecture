@@ -1,0 +1,41 @@
+[
+ {
+  "name": "height_selected",
+  "DEL": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:sum:uns:scaled",
+   "none_H"
+  ]
+ },
+ {
+  "name": "bmi_selected",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "pres:n95"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "none_H"
+  ]
+ },
+ {
+  "name": "consensus_v3",
+  "DEL": [
+   "n_all",
+   "g:all:c3:uns:scaled",
+   "none_H"
+  ],
+  "DUP": [
+   "n_all",
+   "g:all:c3:uns:scaled",
+   "none_H"
+  ]
+ }
+]

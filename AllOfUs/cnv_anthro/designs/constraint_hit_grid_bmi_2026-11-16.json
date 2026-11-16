@@ -1,0 +1,172 @@
+[
+ {
+  "name": "bmi_A0_none",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "pres:n95HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "pres:n95HI"
+  ]
+ },
+ {
+  "name": "bmi_A1_broadCount",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "none_H",
+   "pres:n95HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "none_H",
+   "pres:n95HI"
+  ]
+ },
+ {
+  "name": "bmi_A2_tertileCounts",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "sh_mid",
+   "sh_high",
+   "pres:n95HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "sh_mid",
+   "sh_high",
+   "pres:n95HI"
+  ]
+ },
+ {
+  "name": "bmi_A3_top5Count",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "n95",
+   "pres:n95HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "n95",
+   "pres:n95HI"
+  ]
+ },
+ {
+  "name": "bmi_B0_none",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "none_H"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "none_H"
+  ]
+ },
+ {
+  "name": "bmi_B2_unionCount",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "none_H",
+   "n95HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "none_H",
+   "n95HI"
+  ]
+ },
+ {
+  "name": "bmi_B3_top5Pres",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "none_H",
+   "pres:n95"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "none_H",
+   "pres:n95"
+  ]
+ },
+ {
+  "name": "bmi_B4_HIPres",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "none_H",
+   "pres:HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "none_H",
+   "pres:HI"
+  ]
+ },
+ {
+  "name": "bmi_B5_broadPres",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "none_H",
+   "pres:none_H"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "none_H",
+   "pres:none_H"
+  ]
+ },
+ {
+  "name": "bmi_C0_none",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean"
+  ]
+ },
+ {
+  "name": "bmi_C2_broadPres",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "pres:none_H"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "pres:none_H"
+  ]
+ },
+ {
+  "name": "bmi_C3_unionCount",
+  "DEL": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "n95HI"
+  ],
+  "DUP": [
+   "n_all",
+   "g:HC:c4:uns:mean",
+   "n95HI"
+  ]
+ }
+]

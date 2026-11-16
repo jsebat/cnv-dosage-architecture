@@ -1,0 +1,7 @@
+[
+ {
+  "name": "bmi_selected_union",
+  "DEL": ["n_all", "g:HC:c4:uns:mean", "pres:n95HI"],
+  "DUP": ["n_all", "g:HC:c4:uns:mean", "none_H", "pres:n95HI"]
+ }
+]

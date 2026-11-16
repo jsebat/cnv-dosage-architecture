@@ -1,5 +1,7 @@
 # CNV GWAS of height and BMI in All of Us: handoff for Milad
 
+> **Superseded 2026-11-16 by [`AllOfUs/HANDOFF_Milad.md`](../AllOfUs/HANDOFF_Milad.md)**, which covers this CNV GWAS plus every other genome-wide analysis of the Sacks 2026 drafts, the meta-analysis and the figures. Use that one.
+
 Sebat lab, 2026-11-15. Code: branch `cnv-gwas` of https://github.com/jsebat/cnv-growth-bmi (folder `cnv_gwas/`).
 
 ## What this is, in one paragraph

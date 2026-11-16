@@ -2,6 +2,8 @@
 
 Branch `cnv-gwas` of cnv-growth-bmi. One code base (`cnv_anthro/`), one JSON config per cohort.
 
+**2026-11-16: the current code and the All of Us run for the Sacks 2026 drafts are in [`../AllOfUs/`](../AllOfUs/README.md).** It covers the CNV GWAS (this folder), plus the genome-wide burden, univariate grid, joint models, additivity, the meta-analysis and the figures. This folder is kept as the record of the 2026-11-15 UKBB analysis.
+
 - **Task A**: probe-level CNV GWAS and allele-level tests at the Table S9 loci, adapted to quantitative traits (exact OLS).
   The probe model, probes, filters, independent-test count, genome-wide threshold and allele calling are ports of
   **Omar Shanta's PGC CNV cross-disorder GWAS code** (PGC CNV Freeze_2024; `IndividualDisorder/Freeze_2024/scripts/ALL/<DIS>/noFam_noSex`,
