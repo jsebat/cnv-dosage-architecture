@@ -25,7 +25,9 @@ def safe(n):
 
 
 def plan():
-    """(destination under results/all, source folder under RES) for every UKBB piece the figures use."""
+    """(destination under results/all, source folder under RES) for every UKBB piece the figures use. Grid, call size and joint_sacks34 come from
+    the 2026-11-16 rerun (growthloci_v2_2026-11-16: same inputs, seed and verified shift lists as growthloci_2026-11-15, plus null_runs.npz;
+    joint_sacks34 with loo_mode all_minor so it also holds the minor_all run of joint_drivers_2026-11-15)."""
     P = [("locus_effects", "pipeline_ukbb_strata/all/locus_effects")]        # CNV GWAS, S9 alleles, growth loci: UKBB stratified run, stratum all
     for t in ["height", "bmi"]:                                                # (raw results; exported below with everything else)
         P.append((f"taskA_gwas/{t}", f"pipeline_ukbb_strata/all/taskA_gwas/{t}"))
@@ -42,13 +44,13 @@ def plan():
                     P.append((f"additivity/{t}/hit_{h}_{ex}", f"additivity_hit3_2026-11-15/{t}/{h}_{ex}"))  # model figure
         v = f"{t}_selected"
         P.append((f"scores/{t}/{v}", f"score_axes_2026-11-15/{t}/{v}"))                                  # Fig. 2L
-        P.append((f"grid/joint_sacks34/{t}/{v}", f"growthloci_2026-11-15/joint_sacks34/{t}/{v}"))        # model figure F-G
-        P.append((f"grid/joint_drivers/{t}/{v}", f"joint_drivers_2026-11-15/{t}/{v}"))                   # model figure F-G (minor_all)
+        P.append((f"grid/joint_sacks34/{t}/{v}", f"growthloci_v2_2026-11-16/joint_sacks34/{t}/{v}"))        # model figure F-G
+        P.append((f"grid/joint_drivers/{t}/{v}", f"growthloci_v2_2026-11-16/joint_sacks34/{t}/{v}"))                   # model figure F-G (minor_all; the v2 all_minor run holds it)
         uni = json.load(open(os.path.join(CODE, "designs/grid_univariate_adj.json")))
         for var in uni:
-            P.append((f"grid/grid_univariate/{t}/{safe(var['name'])}", f"growthloci_2026-11-15/grid/{t}/{safe(var['name'])}"))   # Fig. 2G, 2K
+            P.append((f"grid/grid_univariate/{t}/{safe(var['name'])}", f"growthloci_v2_2026-11-16/grid/{t}/{safe(var['name'])}"))   # Fig. 2G, 2K
         for var in json.load(open(os.path.join(CODE, "designs/grid_callsize.json"))):
-            P.append((f"grid/grid_callsize/{t}/{safe(var['name'])}", f"growthloci_2026-11-15/callsize/{t}/{safe(var['name'])}"))  # Fig. 2H
+            P.append((f"grid/grid_callsize/{t}/{safe(var['name'])}", f"growthloci_v2_2026-11-16/callsize/{t}/{safe(var['name'])}"))  # Fig. 2H
     # joint-model heatmap, UK Biobank columns (fig_joint_model_heatmap.R)
     J = [("height", "all", "height_selected_union", "union_terms_2026-11-15/height"),
          ("height", "noUnionDUP", "height_selected", "robust_strata_2026-11-15/S1/height/height_selected"),
@@ -62,9 +64,9 @@ def plan():
          ("bmi", "noUnionDUP_noAsym13", "bmi_selected_union_noDUPunion", "bmi_allpanels_union_2026-11-16/S3/bmi")]
     for t, sub, var, src in J:
         P.append((f"joint/{sub}/{t}/{safe(var)}", src))
-    # BMI univariate grid on all 45 panels: only once the UKBB run exists (folder name set by its job)
+    # BMI univariate grid on all 45 panels (Jon 2026-11-16)
     for var in json.load(open(os.path.join(CODE, "designs/grid_univariate_adj.json"))):
-        P.append((f"grid/grid_univariate_bmi_allpanels/bmi/{safe(var['name'])}", f"grid_univariate_bmi_allpanels_2026-11-16/bmi/{safe(var['name'])}"))
+        P.append((f"grid/grid_univariate_bmi_allpanels/bmi/{safe(var['name'])}", f"growthloci_v2_2026-11-16/grid_univariate_bmi_allpanels/bmi/{safe(var['name'])}"))
     return P
 
 
