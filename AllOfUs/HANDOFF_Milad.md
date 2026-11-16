@@ -39,7 +39,7 @@ Questions: Jon.
 - **height:** GTEx non-brain;
 - **BMI:** all 45 panels for the joint models (Jon, 2026-11-16) and GTEx non-brain elsewhere, as in the UKBB runs behind the current figures.
 
-There is one extra run: the BMI univariate grid on all 45 panels. See section 6, item 1.
+There is one extra run: the BMI univariate grid on all 45 panels, in both cohorts. See section 6, item 1.
 
 ## 1. Before you start
 
@@ -167,7 +167,7 @@ sbatch --export=ALL,REPO=$REPO,OUT_ROOT=$OUT_ROOT,PY=$PY $REPO/ukbb/assemble_ukb
 
 This lays out the existing UKBB results exactly as the AoU pipeline writes its own, then exports them with the same exporter. It recomputes nothing and uses symlinks. The output is `ukbb_reference_sacks2026/ukbb_reference_sacks2026_export.tar.gz` (+ `.sha256`).
 
-Read `ASSEMBLY_MANIFEST.tsv`. Every row should be `ok` except `grid/grid_univariate_bmi_allpanels/...`, which has no UKBB run yet (section 6, item 1).
+Read `ASSEMBLY_MANIFEST.tsv`. Every row should be `ok` once the UKBB grid rerun has finished (section 6, item 1).
 
 ### A3. Resources bundle (light; login node is fine)
 
@@ -338,10 +338,10 @@ Without these variables, the same scripts draw the current UKBB-only figures. We
 
 ## 6. Open points (Jon decides; flag them when you hit them)
 
-1. **BMI univariate grid on all 45 panels.**
-   - Jon switched the BMI joint models to all panels.
-   - The UKBB univariate grid, call-size split and axis scores for BMI are still on GTEx non-brain, and the current Fig. 2G-H and 2L use those.
-   - AoU runs both. A UKBB rerun of the BMI univariate grid on all panels (44 variants, 1,000 nulls; a large ind-compute job) is needed before that version can be meta-analysed.
+1. **UKBB grid rerun (Jon, 2026-11-16).**
+   - The UKBB univariate grid, call-size and joint_sacks34 runs predate the code that saves `null_runs.npz`, so they could not be meta-analysed.
+   - Jon approved a rerun with the same inputs and the verified shift lists: `results/growthloci_v2_2026-11-16`. It includes the BMI univariate grid on all 45 panels.
+   - `assemble_ukbb_reference.py` reads that folder. Wait for it before running A2.
 2. **Reference group of the "only" runs on WGS** (B3, item 3). If it is small, the definition may need to change in both cohorts, e.g. to "no gene-hitting call".
 3. **Platform.** UKBB calls come from arrays; AoU calls come from WGS (GATK-SV). WGS finds many more small calls, so burden bins, the "single CNV" groups and gene counts per person are not identical in meaning. The meta tables keep each cohort's estimate and the heterogeneity test; look at I² before interpreting a pooled value.
 4. **Shift matching in AoU.** AoU reuses the UKBB shifts, which were burden-matched to the UKBB CNVs. The null stays a valid rotation in AoU, but the burden match is approximate there. This is the price of replicate-matched meta-analysis.
