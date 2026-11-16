@@ -25,13 +25,15 @@ def main():
     variants = sorted(set.intersection(*[set(os.listdir(d)) for _, d in C]))
     out = []
     for v in variants:
-        obs, nul, N, perms = {}, {}, {}, set()
+        obs, nul, N, perms, pfile = {}, {}, {}, set(), set()
         for lab, d in C:
             vd = os.path.join(d, v)
             if not os.path.exists(os.path.join(vd, "null_runs.npz")):
                 print(f"WARNING: {vd} has no null_runs.npz; variant {v} skipped (rerun that cohort with the current conga_grid_qt.py)", flush=True)
                 break
             info = json.load(open(os.path.join(vd, "run_info.json"))); N[lab] = float(info["N"]); perms.add((info.get("nrep"), info.get("perms_sha1")))
+            pi = str(info.get("perms", ""))      # "loaded <n> shared shifts from <file>": replicate i = row i of that file in every cohort
+            pfile.add(pi.split(" from ", 1)[1] if pi.startswith("loaded ") and " from " in pi else None)
             obs[lab] = pd.read_csv(os.path.join(vd, "observed_terms.tsv"), sep="\t").set_index(["run", "readout"]).t
             nul[lab] = np.load(os.path.join(vd, "null_runs.npz"))
         else:
@@ -43,7 +45,9 @@ def main():
             W = np.array([np.sqrt(N[lab]) for lab, _ in C])
             def meta_run(r):
                 fk = [f for f in nul[C[0][0]].files if f.startswith(r + "__")][0]
-                T = np.stack([np.asarray(nul[lab][fk], float) for lab, _ in C])          # cohorts x reps x readouts
+                X = [np.asarray(nul[lab][fk], float) for lab, _ in C]
+                nr = min(x.shape[0] for x in X)                                             # cohorts with different nrep: the common
+                T = np.stack([x[:nr] for x in X])          # cohorts x reps x readouts      # first nr shifts (same file prefix) are matched
                 o = np.array([[obs[lab].get((r, nm), np.nan) for nm in rd_names] for lab, _ in C])
                 zo = np.nansum(W[:, None] * o, 0) / np.sqrt(np.sum(W ** 2))
                 zn = np.nansum(W[:, None, None] * T, 0) / np.sqrt(np.sum(W ** 2))
@@ -64,7 +68,7 @@ def main():
                                 noloci_z_emp=emp("no_loci")[1] if "no_loci" in res else np.nan,
                                 minor_all_z_emp=emp("minor_all")[1] if "minor_all" in res else np.nan,
                                 **{f"t_{lab}": obs[lab].get(("full", nm), np.nan) for lab, _ in C},
-                                shared_shifts=len(perms) == 1))
+                                shared_shifts=len(perms) == 1 or (len(pfile) == 1 and None not in pfile)))
     pd.DataFrame(out).to_csv(a.out, sep="\t", index=False, float_format="%.6g")
     print("wrote", a.out, len(out), "rows")
 
