@@ -19,7 +19,8 @@ We ran Part A for you, and every check passed. Use commit `5178737` or later.
   - It took 4 min with 20 nulls and peaked at 3.1 GB of memory.
   - The meta-analysis of the test against the UKBB export ran and gave 70 tables.
   - The test found two bugs, both now fixed: a singular fit in the restricted additivity runs (`e442a2d`) and a null-replicate mismatch when the cohorts' nrep differ (`5178737`).
-- **Your copy.** Both tarballs (with `.sha256` files next to them) are readable by `jsebat-group`. Copy them to your computer with `scp`, then upload them to the workspace bucket (B1).
+- **What goes into the Workbench.** Only the resources bundle: copy it to your computer with `scp`, then upload it to the workspace bucket (B1). The UKBB export stays at UCSD and is used only by the meta-analysis on Expanse (C1).
+- **Drop folder for your results:** `/expanse/projects/sebat1/jsebat/sacks2026_aou/aou_results/`. It is writable by `jsebat-group`.
 
 Sections 2 and 3 are kept as the record of how Part A was run, and for a rerun.
 
@@ -27,8 +28,8 @@ Sections 2 and 3 are kept as the record of how Part A was run, and for a rerun.
 
 **What it is.** The Sacks 2026 drafts describe the CNV dose response of height and BMI. Every genome-wide panel in them comes from UK Biobank (UKBB) today. You will:
 1. run the same analyses in All of Us (AoU), for both traits;
-2. meta-analyse the two cohorts;
-3. redraw those panels from the meta-analysis.
+2. bring the AoU summary statistics to UCSD (federated: only aggregates leave the Workbench);
+3. meta-analyse the two cohorts on Expanse and redraw those panels from the meta-analysis.
 
 **Same code, same summary statistics.** The code is the code that produced the UKBB results; only the config file changes. Every AoU output has the same form as its UKBB counterpart. Every genome-shift null in AoU reuses the exact UKBB shift list, so the two cohorts can be combined replicate by replicate.
 
@@ -38,7 +39,7 @@ Sections 2 and 3 are kept as the record of how Part A was run, and for a rerun.
 |---|---|---|---|
 | A | Expanse | Build and verify the UKBB inputs AoU needs (shift lists, UKBB reference export, resources bundle), then a plumbing test of the AoU config on 5,000 UKBB people | ~½ day, mostly waiting on jobs |
 | B | AoU Workbench | Prep, CNV GWAS, burden, additivity, axis scores, univariate grid, joint models, export | 1–2 days of VM time |
-| C | Workbench or laptop | Meta-analysis (`meta/meta_sacks2026.py`), then the final figures (`figures/`) | < 1 h |
+| C | UCSD: Expanse, then Jon's laptop | Egress the AoU summary statistics to Expanse; meta-analysis there (`ukbb/meta_sacks2026_expanse.sbatch`), then the final figures (`figures/`) | a few hours |
 
 **What you produce, for height and BMI:**
 
@@ -233,7 +234,7 @@ gsutil cp $WORKSPACE_BUCKET/cnv_resources_sacks2026_2026-11-16.tar.gz ~/cnv-grow
 cd ~/cnv-growth-bmi/AllOfUs && sha256sum cnv_resources_sacks2026_2026-11-16.tar.gz && tar xzf cnv_resources_sacks2026_2026-11-16.tar.gz
 ```
 
-Upload the two tarballs to the workspace bucket first (Workbench file upload). They contain no individual data. The bundle creates `AllOfUs/resources/`, which is where `configs/aou_sacks2026.json` expects it.
+Upload the bundle to the workspace bucket first (Workbench file upload). It contains no individual data. The bundle creates `AllOfUs/resources/`, which is where `configs/aou_sacks2026.json` expects it.
 
 **Fill two paths** in `cnv_anthro/configs/aou_sacks2026.json`, both marked `FILL_FROM_DATA_DICTIONARY`. Take them from the Workbench page "How the All of Us genomic data are organized" for your CDR:
 - the srWGS **GATK-SV joint-called VCF**;
@@ -322,22 +323,45 @@ AoU rules (Dissemination Policy, egress alert and large-download pages; checked 
 - **Secondary rule:** a small count must not be recoverable by subtracting strata (e.g. male = all − female).
 - It writes `EXPORT_MANIFEST.txt`.
 
+**Federated design.** The Workbench produces All of Us summary statistics only. They come to UCSD (Expanse), where the meta-analysis and figures are run. No UK Biobank data go into the Workbench.
+
+**What leaves.** Everything under `export_aggregate/`, including the `null_runs.npz` files.
+- These are null-replicate test statistics (t values, float32). They hold no counts and no participant data.
+- The meta-analysis needs them. Without them, the grid and joint models cannot be combined.
+- Expect the tarball to be about 100–300 MB; the UKBB equivalent is 91 MB, of which 74 MB is npz. Check the size against the egress limit before downloading.
+
 **Download procedure:**
-1. Run the meta-analysis in the Workbench (Part C1).
-2. `tar czf aou_sacks2026_export_<date>.tar.gz --exclude='*.npz' export_aggregate meta`. The null arrays stay in the Workbench once the meta-analysis has used them.
-3. Read `EXPORT_MANIFEST.txt`, spot-check that no count column shows a value from 1 to 20, and download once via the Jupyter file browser.
-4. Put it in Dropbox `Jon/Claude/UKBB_anthro_CNV/aou_results/` and tell Jon.
+1. In `~/cnv_anthro_run`:
+   ```bash
+   tar czf aou_sacks2026_export_<date>.tar.gz export_aggregate
+   sha256sum aou_sacks2026_export_<date>.tar.gz > aou_sacks2026_export_<date>.tar.gz.sha256
+   ```
+2. Read `EXPORT_MANIFEST.txt`, spot-check that no count column shows a value from 1 to 20, and download both files once via the Jupyter file browser.
+3. Copy them to Expanse and delete your local copy:
+   ```bash
+   scp aou_sacks2026_export_<date>.tar.gz* <user>@login.expanse.sdsc.edu:/expanse/projects/sebat1/jsebat/sacks2026_aou/aou_results/
+   ```
+   `aou_results/` is writable by `jsebat-group`.
+4. Tell Jon. He, or you, then runs Part C on Expanse.
 
-## 5. Part C: meta-analysis and final figures
+## 5. Part C: meta-analysis and final figures (at UCSD)
 
-### C1. Meta-analysis (in the Workbench, so only small tables leave)
+### C1. Meta-analysis (Expanse)
 
-Upload `ukbb_reference_sacks2026_export.tar.gz` to the bucket, then:
+The UKBB reference export is already unpacked on Expanse. Submit the job; it is small (8 cores, ≤ 4 h):
 ```bash
-mkdir -p ~/ukbb_export && tar xzf ukbb_reference_sacks2026_export.tar.gz -C ~/ukbb_export     # gives ~/ukbb_export/all
-cd ~/cnv-growth-bmi/AllOfUs/cnv_anthro
-python ../meta/meta_sacks2026.py --ukbb ~/ukbb_export/all --aou ~/cnv_anthro_run/export_aggregate/all --out ~/cnv_anthro_run/meta
+REPO=/expanse/projects/sebat1/$USER/cnv-growth-bmi/AllOfUs      # your clone, at the current cnv-gwas head
+T=/expanse/projects/sebat1/jsebat/sacks2026_aou/aou_results/aou_sacks2026_export_<date>.tar.gz
+sbatch --test-only --export=ALL,REPO=$REPO,AOU_TAR=$T,PY=$PY $REPO/ukbb/meta_sacks2026_expanse.sbatch
+sbatch --export=ALL,REPO=$REPO,AOU_TAR=$T,PY=$PY $REPO/ukbb/meta_sacks2026_expanse.sbatch
 ```
+The job:
+1. checks the sha256;
+2. unpacks the AoU tarball next to it;
+3. runs `meta/meta_sacks2026.py` against `ukbb_reference_sacks2026/export/all`;
+4. writes `aou_results/meta_aou_sacks2026_export_<date>/`.
+
+The log ends with the table count and a list of grid tables with `shared_shifts` not `True`. That list must be empty.
 
 How each analysis is combined:
 
@@ -353,7 +377,7 @@ The output uses the same folder and file names as the UKBB aggregates (`dup_burd
 
 ### C2. Final figures (Jon's laptop)
 
-The locus panels read the lab Dropbox. Download the meta folder to `Jon/Claude/UKBB_anthro_CNV/aou_results/meta`, then, in `AllOfUs/figures`:
+The locus panels read the lab Dropbox. Copy the meta folder from Expanse to `Jon/Claude/UKBB_anthro_CNV/aou_results/meta`. It holds only meta tables, a few MB. Then, in `AllOfUs/figures`:
 ```bash
 GENOMEWIDE_ROOT=<meta> GENOMEWIDE_LABEL="UK Biobank + All of Us" FIG_OUT=<out> python make_fig2_fig3_reorg.py
 GENOMEWIDE_ROOT=<meta> GENOMEWIDE_LABEL="UK Biobank + All of Us" FIG_OUT=<out> python make_fig_models.py
