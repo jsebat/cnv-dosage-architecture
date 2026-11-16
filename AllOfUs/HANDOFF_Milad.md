@@ -3,6 +3,26 @@
 Sebat lab, 2026-11-16. Code: branch `cnv-gwas` of https://github.com/jsebat/cnv-growth-bmi, folder `AllOfUs/`.
 Questions: Jon.
 
+## Status (2026-11-16): Part A is done; start at Part B
+
+We ran Part A for you, and every check passed. Use commit `5178737` or later.
+
+- **Shift lists (A1):** all 11 lists regenerated. Each one is identical to its original UKBB run (`perms_sha1` match on every row).
+- **UKBB grid rerun:** finished. All 158 runs have `null_runs.npz`. Their observed t and z are identical to the 2026-11-15 runs.
+- **UKBB reference export (A2):** all 199 pieces present.
+  - `/expanse/projects/sebat1/jsebat/sacks2026_aou/ukbb_reference_sacks2026/ukbb_reference_sacks2026_export.tar.gz`
+  - 82 MB; sha256 `20d8aa037e7dfe372182ec12b03523950b538d971ab02add49fce6644a496a6a`
+- **Resources bundle (A3):**
+  - `/expanse/projects/sebat1/jsebat/sacks2026_aou/aou_bundle/cnv_resources_sacks2026_2026-11-16.tar.gz`
+  - 11.8 MB; sha256 `27c8b6dc5c66b4cf52c07bc3d195b36cf0658fc1395294f5409215142d9df44b`
+- **Plumbing test (A4):** passed every step on 4,991 people.
+  - It took 4 min with 20 nulls and peaked at 3.1 GB of memory.
+  - The meta-analysis of the test against the UKBB export ran and gave 70 tables.
+  - The test found two bugs, both now fixed: a singular fit in the restricted additivity runs (`e442a2d`) and a null-replicate mismatch when the cohorts' nrep differ (`5178737`).
+- **Your copy.** Both tarballs (with `.sha256` files next to them) are readable by `jsebat-group`. Copy them to your computer with `scp`, then upload them to the workspace bucket (B1).
+
+Sections 2 and 3 are kept as the record of how Part A was run, and for a rerun.
+
 ## In short
 
 **What it is.** The Sacks 2026 drafts describe the CNV dose response of height and BMI. Every genome-wide panel in them comes from UK Biobank (UKBB) today. You will:
@@ -175,7 +195,7 @@ Read `ASSEMBLY_MANIFEST.tsv`. Every row should be `ok` once the UKBB grid rerun 
 OUT_ROOT=$OUT_ROOT bash $REPO/ukbb/make_aou_bundle_sacks2026.sh
 ```
 
-The output is `aou_bundle/cnv_resources_sacks2026_2026-11-16.tar.gz` (+ `.sha256`), about 15 MB. It holds:
+The output is `aou_bundle/cnv_resources_sacks2026_2026-11-16.tar.gz` (+ `.sha256`), about 12 MB. It holds:
 - the public annotations (refGene exons, GeneBayes s_het, ClinGen, Collins 2022 dosage scores, TWAS30, segmental duplications, Omar's allele definitions, growth-locus lists);
 - the UKBB probe positions;
 - the verified shift lists.
@@ -261,7 +281,12 @@ python run_pipeline.py --config $C --steps export
 
 A missing shift file stops the run (`require_shared_shifts`). That is deliberate: AoU's own shifts cannot be meta-analysed replicate by replicate.
 
-**Time.** The grid and joint steps are the main cost. In UKBB (N = 345k), one joint run with 2,000 nulls took 45–75 min on 8 threads. Use the minutes from the plumbing test, scaled to the AoU N, for your own estimate.
+**Time.** The grid and joint steps are the main cost.
+- **UKBB (N = 345k):**
+  - one joint run with 2,000 nulls took 45–75 min on 8 threads;
+  - each grid batch of the 2026-11-16 rerun took 13–53 min.
+- **The 5k plumbing test:** every step together took about 4 min.
+- **AoU:** expect the grid and joint steps to take several hours on a 64–96 vCPU VM. Keep the VM running, or send them to a batch VM with `dsub_run.sh`.
 
 ### B3. QC before export
 
@@ -322,7 +347,7 @@ How each analysis is combined:
 | Bins and models | Inverse-variance per bin or term, carriers summed |
 | Sub-additivity (Fig. 3I) | Meta of each class, then the asymmetric − mirror difference |
 | Score additivity (Fig. 2L) | Meta of each cohort's ratio of slopes, carriers of 2+ CNVs vs one; the scores are cohort-specific, the ratio is not |
-| Grid and joint models | √N-weighted Stouffer of t, computed for every null replicate under the shared shifts; then empirical z, P, and how many removals hold. `shared_shifts` must be `True` on every row |
+| Grid and joint models | √N-weighted Stouffer of t, computed for every null replicate under the shared shifts; then empirical z, P, and how many removals hold. `shared_shifts` must be `True` on every row. It is `True` when both cohorts used the same shifts: either the same list (same nrep and `perms_sha1`), or the same shift file. In the 5k test it was `False` for the five `joint/<subset>` folders only because the test used 20 nulls; the AoU config uses 2,000, as UKBB did |
 
 The output uses the same folder and file names as the UKBB aggregates (`dup_burden_2026-11-15/`, `growthloci_2026-11-15/`, …), plus `joint/<subset>/<trait>/grid_summary.tsv` and `cnv_gwas/<trait>_all/`.
 
@@ -341,8 +366,10 @@ Without these variables, the same scripts draw the current UKBB-only figures. We
 1. **UKBB grid rerun (Jon, 2026-11-16).**
    - The UKBB univariate grid, call-size and joint_sacks34 runs predate the code that saves `null_runs.npz`, so they could not be meta-analysed.
    - Jon approved a rerun with the same inputs and the verified shift lists: `results/growthloci_v2_2026-11-16`. It includes the BMI univariate grid on all 45 panels.
-   - `assemble_ukbb_reference.py` reads that folder. Wait for it before running A2.
-2. **Reference group of the "only" runs on WGS** (B3, item 3). If it is small, the definition may need to change in both cohorts, e.g. to "no gene-hitting call".
+   - `assemble_ukbb_reference.py` reads that folder. **Done:** the rerun reproduced the old observed values exactly, and the UKBB export is built from it.
+2. **Reference group of the "only" runs on WGS** (B3, item 3).
+   - In the UKBB 5k test, these runs kept 1,170–1,358 of 4,991 people.
+   - If the AoU reference group is much smaller, the definition may need to change in both cohorts, e.g. to "no gene-hitting call".
 3. **Platform.** UKBB calls come from arrays; AoU calls come from WGS (GATK-SV). WGS finds many more small calls, so burden bins, the "single CNV" groups and gene counts per person are not identical in meaning. The meta tables keep each cohort's estimate and the heterogeneity test; look at I² before interpreting a pooled value.
 4. **Shift matching in AoU.** AoU reuses the UKBB shifts, which were burden-matched to the UKBB CNVs. The null stays a valid rotation in AoU, but the burden match is approximate there. This is the price of replicate-matched meta-analysis.
 
