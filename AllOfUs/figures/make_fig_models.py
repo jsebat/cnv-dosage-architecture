@@ -247,8 +247,16 @@ for axx, t, col, title, terms in [
                                                  ('  … DUP arm', 'HC:c4:uns:mean|DUP'), ('top-5% s$_{het}$ gene\npresent, DEL', 'pres:n95|DEL'),
                                                  ('constraint count, DUP', 'none_H|DUP'), ('genes, DEL', 'n_all|DEL'), ('genes, DUP', 'n_all|DUP')])]:
     rows = []
+    # Jon 2026-11-16: the gene count (mean shift) is not rotated by the shift null and absorbs the scrambled annotation terms under it (UKBB BMI DEL:
+    # t +4.7 vs null mean +7.4 -> z_emp -4.3, opposite to the raw effect). Its rows show the analytic t (against 0), per run, from per_run_z.tsv.
+    PR = pd.read_csv(RA / f'joint_drivers_2026-11-15/{t}/{t}_selected/per_run_z.tsv', sep='\t')
     for lab, ro in terms:
         r = J[t][J[t].readout.str.replace('g:', '', regex=False) == ro].iloc[0]
+        if ro.startswith('n_all|'):
+            p = PR[PR.readout.str.replace('g:', '', regex=False) == ro].set_index('run').t
+            lo = p[p.index.str.startswith('loo_')]; held = ((lo.abs() > 1.96) & (np.sign(lo) == np.sign(p['full']))).mean() >= .9
+            rows.append((lab, [(p['full'], held, col, 'o', .2, 'f'), (p['minor_all'], True, col, '^', 0, 'f'), (p['no_loci'], True, col, 'x', -.2, 'f')]))
+            continue
         rows.append((lab, [(r.z_emp, r.loo_held >= .9 * r.loo_n, col, 'o', .2, 'f'), (r.minor_all_z_emp, True, col, '^', 0, 'f'),
                            (r.noloci_z_emp, True, col, 'x', -.2, 'f')]))
     forest(axx, rows, title)
@@ -351,7 +359,7 @@ NOTE = ('A–D: 34 recurrent CNV intervals with published height and BMI effects
         'F, G: matched nulls for each of the 24 single-unit removals, for removal of all 16 minor units together with the 8 driver units kept (triangles) '
         'and for removal of all recurrent intervals (crosses).\n'
         'B: duplication effect ~ deletion effect (mirror line) + one gene term, REML meta-regression, ML AIC; union = top-5% s$_{het}$ or ClinGen HI (11 intervals); hatched = count, solid = presence; '
-        'no term fits the BMI duplication offset except the constrained-gene count. D: analytic z.\n'
+        'no term fits the BMI duplication offset except the constrained-gene count. D: analytic z. F, G: the gene-count rows (mean shift) show the analytic z, because the shift null does not rotate the gene count.\n'
         'C: bars ±1 SE; dashed line = mirror. H, I: components that hold; mirror (orange) = total mirror effect, z of the deletion–duplication locus correlation in the recurrent-interval joint model '
         '(single hit in the model); yellow = TWAS portion, the share removed by adding the unsigned TWAS count (height 58%, BMI 17%); single hit = duplication single-hit term of the same model; '
         'constraint terms of that model are not significant and are not drawn.'))

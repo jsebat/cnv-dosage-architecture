@@ -33,10 +33,18 @@ allh <- function(s) { p <- as.numeric(strsplit(s, "/")[[1]]); p[2] > 0 && p[1] =
 lmap <- c(mirror = "mirror_tw", tw_DEL = "tw_DEL", tw_DUP = "tw_DUP", hit_DEL = "hit_DEL", hit_DUP = "hit_DUP", con_DEL = "con_DEL", con_DUP = "con_DUP",
           nall_DEL = "nall_DEL", nall_DUP = "nall_DUP")
 F0 <- fread(file.path(V, "joint_bivariate_2026-11-15/joint_bivariate_summary.csv"))[grepl("^unsigned", twas) & readout %in% names(lmap)]
-for (i in seq_len(nrow(F0))) add(F0$trait[i], "L_all", lmap[[F0$readout[i]]], F0$z_emp[i], F0$P_emp[i], allh(F0$int_held[i]))
+# Jon 2026-11-16: the mean shift (total genes) is not rotated by the shift null, and under that null it absorbs the effect of the scrambled
+#   annotation terms (UKBB BMI DEL: observed t +4.7, null mean t +7.35 -> z_emp -4.3, the opposite sign of the raw effect, which is upper right as in
+#   the burden bins). Mean-shift tiles therefore show the analytic z (t against 0); the annotation terms keep the shift-null z.
+nall_z <- function(ro, za, ze) if (grepl("^nall", ro)) za else ze
+nall_P <- function(ro, za, pe) if (grepl("^nall", ro)) 2 * pnorm(-abs(za)) else pe
+nall_h <- function(ro, h) if (grepl("^nall", ro)) FALSE else h     # per-removal analytic z not saved at locus level (no mean-shift tile has P < 0.05 there)
+for (i in seq_len(nrow(F0))) add(F0$trait[i], "L_all", lmap[[F0$readout[i]]], nall_z(F0$readout[i], F0$z_analytic[i], F0$z_emp[i]),
+                                 nall_P(F0$readout[i], F0$z_analytic[i], F0$P_emp[i]), nall_h(F0$readout[i], allh(F0$int_held[i])))
 ST <- fread(file.path(V, "joint_bivariate_strata_2026-11-15/joint_bivariate_summary.csv"))[readout %in% names(lmap)]
 smap <- c(noUnionDUP = "L_noUD", noUnionAny = "L_noU", noAsym13 = "L_noA")
-for (i in seq_len(nrow(ST))) add(ST$trait[i], smap[[ST$stratum[i]]], lmap[[ST$readout[i]]], ST$z_emp[i], ST$P_emp[i], allh(ST$int_held[i]))
+for (i in seq_len(nrow(ST))) add(ST$trait[i], smap[[ST$stratum[i]]], lmap[[ST$readout[i]]], nall_z(ST$readout[i], ST$z_analytic[i], ST$z_emp[i]),
+                                 nall_P(ST$readout[i], ST$z_analytic[i], ST$P_emp[i]), nall_h(ST$readout[i], allh(ST$int_held[i])))
 DC <- fread(file.path(V, "joint_bivariate_2026-11-15/mirror_decomposition_union_presence.csv"))[twas == "twU"]
 for (i in seq_len(nrow(DC))) {
   add(DC$trait[i], "L_all", "mirror_tot", -DC$z_total[i], 2 * pnorm(-abs(DC$z_total[i])), allh(DC$z_total_int_held[i]))
@@ -65,7 +73,11 @@ gpath <- function(cn, t) { if (nzchar(META)) return(file.path(META, "joint", SUB
   file.path(RA, gfiles[[cn]], t, paste0(t, "_selected"), "grid_summary.tsv") }
 for (cn in names(gfiles)) for (t in c("height", "bmi")) {
   g <- fread(gpath(cn, t)); cat(cn, t, gpath(cn, t), "\n")
+  ob <- fread(file.path(dirname(gpath(cn, t)), "per_run_z.tsv"))                # analytic t per run (meta: Stouffer t), for the mean-shift tiles
   for (i in seq_len(nrow(g))) { tm <- gmap(g$readout[i]); if (is.na(tm) || !is.finite(g$z_emp[i])) next
+    if (grepl("^nall", tm)) { ta <- g$t_analytic[i]; tl <- ob[readout == g$readout[i] & grepl("^loo_", run), t]
+      stopifnot(length(tl) == g$loo_n[i])
+      add(if (t == "height") "Height" else "BMI", cn, tm, ta, 2 * pnorm(-abs(ta)), all(abs(tl) > 1.96 & sign(tl) == sign(ta))); next }
     add(if (t == "height") "Height" else "BMI", cn, tm, g$z_emp[i], g$P_emp[i], g$loo_held[i] == g$loo_n[i]) } }
 D <- rbindlist(out)
 GWL <- if (nzchar(META)) "UK Biobank + All of Us\n(genome-wide)" else "UK Biobank\n(genome-wide)"

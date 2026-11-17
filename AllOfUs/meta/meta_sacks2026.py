@@ -229,6 +229,9 @@ def grid(C, out, code):
         f = f"{out}/_grid/joint_drivers_{t}.tsv"
         if f in res:
             wr(res[f], f"{out}/joint_drivers_2026-11-15/{t}/{t}_selected/grid_summary.tsv")
+            pr = f[:-4] + ".per_run_z.tsv"                # per-run meta t: the figures' gene-count (mean shift) rows
+            if os.path.exists(pr):
+                wr(pd.read_csv(pr, sep="\t"), f"{out}/joint_drivers_2026-11-15/{t}/{t}_selected/per_run_z.tsv")
 
 
 def gwas(U, A, out, code):

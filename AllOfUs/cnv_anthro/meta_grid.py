@@ -23,7 +23,7 @@ def main():
     a = ap.parse_args()
     C = [tuple(x.split("=", 1)) for x in a.cohort]
     variants = sorted(set.intersection(*[set(os.listdir(d)) for _, d in C]))
-    out = []
+    out, per_run = [], []
     for v in variants:
         obs, nul, N, perms, pfile = {}, {}, {}, set(), set()
         for lab, d in C:
@@ -54,6 +54,9 @@ def main():
                 return zo, zn
             res = {r: meta_run(r) for r in runs}
             loo = [r for r in runs if r.startswith("loo_")]
+            for r in runs:                    # per-run meta t (Stouffer of the analytic t), as per_run_z.tsv of a single cohort: the
+                for j, nm in enumerate(rd_names):   # figures read it for terms the shift null does not rotate (gene count / mean shift)
+                    per_run.append(dict(variant=v, readout=nm, run=r, t=res[r][0][j]))
             for j, nm in enumerate(rd_names):
                 def emp(r):
                     zo, zn = res[r]; nu = zn[:, j]; nu = nu[np.isfinite(nu)]
@@ -63,14 +66,20 @@ def main():
                     return zo[j], (zo[j] - mu) / sd, (1 + np.sum(np.abs(nu - mu) >= abs(zo[j] - mu))) / (len(nu) + 1)
                 zo, ze, pe = emp("full"); s = np.sign(ze)
                 lz = [emp(r)[1] for r in loo]
-                out.append(dict(variant=v, readout=nm, cohorts=";".join(l for l, _ in C), Z_meta=zo, z_emp=ze, P_emp=pe,
+                out.append(dict(variant=v, readout=nm, cohorts=";".join(l for l, _ in C), Z_meta=zo, t_analytic=zo, z_emp=ze, P_emp=pe,
                                 loo_held=sum(1 for q in lz if np.isfinite(q) and abs(q) > 1.96 and np.sign(q) == s), loo_n=len(loo),
                                 noloci_z_emp=emp("no_loci")[1] if "no_loci" in res else np.nan,
                                 minor_all_z_emp=emp("minor_all")[1] if "minor_all" in res else np.nan,
                                 **{f"t_{lab}": obs[lab].get(("full", nm), np.nan) for lab, _ in C},
                                 shared_shifts=len(perms) == 1 or (len(pfile) == 1 and None not in pfile)))
     pd.DataFrame(out).to_csv(a.out, sep="\t", index=False, float_format="%.6g")
+    pd.DataFrame(per_run).to_csv(per_run_path(a.out), sep="\t", index=False, float_format="%.6g")
     print("wrote", a.out, len(out), "rows")
+
+
+def per_run_path(out):
+    """<dir>/grid_summary.tsv -> <dir>/per_run_z.tsv (the single-cohort name); otherwise <out stem>.per_run_z.tsv"""
+    return os.path.join(os.path.dirname(out), "per_run_z.tsv") if os.path.basename(out) == "grid_summary.tsv" else out[:-4] + ".per_run_z.tsv"
 
 
 if __name__ == "__main__":
