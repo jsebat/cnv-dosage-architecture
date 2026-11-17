@@ -377,7 +377,8 @@ Your array CNV calls, analysed with the same specs as the UKBB array calls. Conf
 
 The WGS dataset runs two ways: the default (`configs/aou_sacks2026.json`) and the whole pipeline again **without the segmental-duplication filter** (`configs/aou_sacks2026_nosegdup.json`).
 
-- The only segdup filter in the pipeline is the CNV GWAS probe filter (probes in segdups are tested but not kept). The new config sets it to none, so segdup probes count in the independent tests and can be lead probes. Everything else is identical: same CNV and phenotype tables, covariates, strata, frequency and carrier-count filters, and shared UKBB shifts.
+- **Test positions in WGS.** There are no probes. The GWAS tests every distinct start and end of the AoU calls of each type (DEL, DUP), plus the UKBB array probe positions (`gwas.ref_probes`) so the two cohorts share positions for the meta-analysis. At each position, carriers of a call spanning it are compared with everyone else. (The code and output columns still say "probe", Omar's array term.)
+- The only segdup filter in the pipeline is the GWAS position filter: positions inside a segmental duplication are tested but not kept. The new config turns it off, so those positions count in the independent tests and can be lead positions. Everything else is identical: same CNV and phenotype tables, covariates, strata, frequency and carrier-count filters, and shared UKBB shifts.
 - It reuses the tables from the default run's prep step, so run it after that prep (it has no prep step of its own). It writes to `~/cnv_anthro_nosegdup/`.
 - Run it start to finish with the B2 commands and `C=configs/aou_sacks2026_nosegdup.json`, skipping `prep`. Since only the GWAS differs, you can stop after `gwas,plots` and export if Workbench time is short; tell Jon if you do.
 - Name its tarball `aou_wgs_nosegdup_sacks2026_export_<date>.tar.gz`.
