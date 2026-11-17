@@ -11,6 +11,7 @@ hit (n_all), the unsigned TWAS |z|>3 count (consensus mirror term), and the numb
 Aggregate outputs only.
 """
 import argparse
+import bisect
 import json
 import os
 import numpy as np
@@ -36,6 +37,43 @@ def ols(yr, X, Q, names):
     return pd.DataFrame({"term": names, "beta": b, "SE": se, "T": b / se, "P": 2 * stats.t.sf(np.abs(b / se), df)}), rss, df
 
 
+def qualifying_calls(cnv, n, max_freq, exon_file, segdup_bed=None):
+    """Boolean per call: rare (fewer than max_freq*n people carry a same-type call at >= 50% reciprocal overlap; the PGC frequency
+    rule at a lower threshold) and gene-hitting by the model's rules (DEL: any exon by >= 1 bp; DUP: a whole transcript inside the call).
+    With segdup_bed, calls whose midpoint lies in a segmental duplication do not qualify."""
+    lim = max_freq * n
+    site = cnv.groupby(["CHR", "BP1", "BP2", "TYPE"]).IID.agg(lambda s: set(s)).reset_index()
+    site["rare"] = True
+    for (c, t), g in site.groupby(["CHR", "TYPE"]):
+        g = g.sort_values("BP1"); idx = g.index.to_numpy(); s = g.BP1.to_numpy(); e = g.BP2.to_numpy(); car = g.IID.to_list()
+        maxlen = (e - s).max()
+        for k in range(len(idx)):
+            carriers = set()
+            for m in range(bisect.bisect_left(s, s[k] - maxlen), bisect.bisect_right(s, e[k])):
+                ov = min(e[k], e[m]) - max(s[k], s[m])
+                if ov > 0 and ov >= 0.5 * (e[k] - s[k]) and ov >= 0.5 * (e[m] - s[m]):
+                    carriers |= car[m]
+                    if len(carriers) >= lim:
+                        site.at[idx[k], "rare"] = False; break
+    rare = cnv.merge(site[["CHR", "BP1", "BP2", "TYPE", "rare"]], on=["CHR", "BP1", "BP2", "TYPE"], how="left").rare.to_numpy(bool)
+    U, ex, tx = load_genes(exon_file); cc = cnv.copy(); cc["row"] = np.arange(len(cc)); gene = np.zeros(len(cc), bool)
+    for typ, feats, mode in [(1, ex, "overlap"), (3, tx, "within")]:
+        m = (cc.TYPE == typ).to_numpy(); gene[m] = incidence(cc[m], feats, mode, len(cc), len(U)).getnnz(axis=1)[m] > 0
+    q = rare & gene
+    if segdup_bed:
+        sd = pd.read_csv(segdup_bed, sep="\t", header=None, usecols=[0, 1, 2], comment="#")
+        sd[0] = sd[0].astype(str).str.replace("chr", "", regex=False)
+        mid = ((cc.BP1 + cc.BP2) // 2).to_numpy(); insd = np.zeros(len(cc), bool)
+        for c, g in sd.groupby(0):
+            if not c.isdigit():
+                continue
+            g = g.sort_values(1); st = g[1].to_numpy(); en = np.maximum.accumulate(g[2].to_numpy())
+            m = (cc.CHR == int(c)).to_numpy(); i = np.searchsorted(st, mid[m], side="right") - 1
+            insd[m] = (i >= 0) & (en[np.maximum(i, 0)] > mid[m])
+        q &= ~insd
+    return q
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pheno", required=True); ap.add_argument("--trait", required=True); ap.add_argument("--cnv", required=True)
@@ -49,7 +87,12 @@ def main():
     ap.add_argument("--exclude_loci", default=None, help="TSV NAME CHR START END: drop people carrying a call matching one of these intervals (50%% reciprocal overlap)")
     ap.add_argument("--exclude_dosage", default="both", choices=["both", "DEL", "DUP"])
     ap.add_argument("--loci_mode", default="exclude", choices=["exclude", "only"],
-                    help="exclude = drop carriers of --exclude_loci; only = keep only those carriers (plus people with no CNV call)")
+                    help="exclude = drop carriers of --exclude_loci; only = keep only those carriers plus the --only_ref reference group")
+    ap.add_argument("--only_ref", default="nocall", choices=["nocall", "no_rare_gene", "no_rare_gene_nosd"],
+                    help="reference group of the 'only' runs: nocall (arrays), no_rare_gene (WGS), no_rare_gene_nosd (WGS sensitivity)")
+    ap.add_argument("--rare_freq", type=float, default=0.01,
+                    help="rare = carried by < this fraction of the sample (same-type calls at >= 50%% reciprocal overlap, the PGC frequency rule)")
+    ap.add_argument("--segdup_bed", default="", help="segmental duplications BED (needed for --only_ref no_rare_gene_nosd)")
     a = ap.parse_args(); os.makedirs(a.out, exist_ok=True)
     ph = pd.read_csv(a.pheno, sep="\t", dtype={"IID": str})
     num = [c for c in a.numeric.split(",") if c]; fac = [c for c in a.factors.split(",") if c]
@@ -69,13 +112,27 @@ def main():
             ov = (np.minimum(c_.BP2, l.END) - np.maximum(c_.BP1, l.START)).clip(lower=0)
             m = (ov >= 0.5 * (l.END - l.START)) & (ov >= 0.5 * (c_.BP2 - c_.BP1))
             hit |= set(c_.IID[m]); excl[l.NAME] = int(m.sum())
-        # exclude: drop carriers of these loci; only: keep only carriers of these loci plus people with no CNV call at all
-        drop = hit if a.loci_mode == "exclude" else set(cnv.IID) - hit
+        # exclude: drop carriers of these loci; only: keep only carriers of these loci plus the reference group (--only_ref):
+        #   nocall              people with no CNV call at all (array definition; UKBB)
+        #   no_rare_gene        people with no rare (< --rare_freq) gene-hitting call (WGS definition, Jon 2026-11-17: everyone
+        #                       sequenced carries common CNVs, so "no call" is empty in AoU)
+        #   no_rare_gene_nosd   people with no rare gene-hitting call whose midpoint lies outside segmental duplications (WGS sensitivity)
+        if a.loci_mode == "exclude":
+            drop = hit
+        elif a.only_ref == "nocall":
+            drop = set(cnv.IID) - hit
+        else:
+            q = qualifying_calls(cnv, len(ph), a.rare_freq, a.exons, a.segdup_bed if a.only_ref == "no_rare_gene_nosd" else None)
+            drop = set(cnv.IID[q]) - hit
         ph = ph[~ph.IID.isin(drop)].reset_index(drop=True)
         Zc, _ = design_matrix(ph, num, fac); Q, _ = np.linalg.qr(Zc); N = len(ph)
         y = ph[a.trait].to_numpy(float); yr = y - Q @ (Q.T @ y)
         cnv = cnv[cnv.IID.isin(set(ph.IID))].reset_index(drop=True)
         excl = {"mode": a.loci_mode, "people_dropped": len(drop), "locus_carriers": len(hit), "dosage": a.exclude_dosage, "calls_matched_per_locus": excl}
+        if a.loci_mode == "only":
+            excl.update(only_ref=a.only_ref, reference_N=int(N - ph.IID.isin(hit).sum()), locus_carriers_in_sample=int(ph.IID.isin(hit).sum()))
+            if a.only_ref != "nocall":
+                excl.update(rare_freq=a.rare_freq, segdup_bed=os.path.basename(a.segdup_bed) if a.only_ref == "no_rare_gene_nosd" else None)
     cnv["row"] = pd.Series(np.arange(N), index=ph.IID).loc[cnv.IID].to_numpy()
     U, ex, tx = load_genes(a.exons); M = len(U)
     gc = pd.read_csv(a.gene_cov, sep="\t", dtype={"entrez": str}); gc.loc[gc.shet_imputed == 1, "shet"] = np.nan

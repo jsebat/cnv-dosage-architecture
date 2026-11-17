@@ -351,6 +351,12 @@
   "asym_loci": "../resources/growth_loci/asymmetric_molly13.tsv",
   "mirror_loci": "../resources/growth_loci/mirror_molly21.tsv",
   "sacks_loci": "../resources/growth_loci/loci_sacks34.tsv",
+  "only_ref": "no_rare_gene",
+  "only_ref_sensitivity": [
+   "no_rare_gene_nosd"
+  ],
+  "rare_freq": 0.01,
+  "segdups": "../resources/segDups.bed",
   "scores": {
    "design": "designs/joint_2026-11-15.json",
    "variants": {

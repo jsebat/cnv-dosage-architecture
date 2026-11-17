@@ -39,6 +39,7 @@ def main():
     ap.add_argument("--keep_samples", required=True, help="IDs present in the CNV source (SV VCF sample list)")
     ap.add_argument("--unrelated", default=None, help="optional AoU maximal-unrelated sample list")
     ap.add_argument("--n_pcs", type=int, default=16)
+    ap.add_argument("--batch", default=None, help="array dataset only: TSV without header, IID <tab> genotyping batch -> column array_batch")
     ap.add_argument("--cdr", default=os.environ.get("WORKSPACE_CDR"))
     ap.add_argument("--measurements_csv", default=None, help="testing: pre-extracted rows instead of BigQuery")
     a = ap.parse_args()
@@ -71,6 +72,9 @@ def main():
     pcs = np.array([ast.literal_eval(x)[: a.n_pcs] for x in an.pca_features])
     A = pd.DataFrame(pcs, columns=[f"PC{i + 1}" for i in range(a.n_pcs)]); A["IID"] = an.research_id; A["ancestry_pred"] = an.ancestry_pred
     P = P.merge(A, on="IID", how="inner"); log["with_PCs"] = int(len(P))
+    if a.batch:   # array dataset (Jon 2026-11-17): genotyping batch as a factor covariate, as for UKBB
+        B = pd.read_csv(a.batch, sep="\t", header=None, names=["IID", "array_batch"], dtype=str)
+        P = P.merge(B, on="IID", how="inner"); log["with_array_batch"] = int(len(P))
     # one covariate age per person: the trait's own age where analysed (height and BMI rows can differ)
     P["age"] = P.age_h.fillna(P.age_b); P["age2"] = P.age ** 2
     out = {}

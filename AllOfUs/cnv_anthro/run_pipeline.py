@@ -187,9 +187,15 @@ def main():
                 if F_.get("phaplo"):
                     base += ["--phaplo", F_["phaplo"]]
                 ADD = [("all", [])]
+                # "only" runs: reference group = figures.only_ref (nocall = arrays/UKBB; no_rare_gene = WGS, Jon 2026-11-17), named
+                # onlyasym_<dos> as before; figures.only_ref_sensitivity adds the same runs with other references, suffixed _<ref>
+                refs = [(F_.get("only_ref", "nocall"), "")] + [(r, f"_{r}") for r in F_.get("only_ref_sensitivity", [])]
+                RX = ["--rare_freq", str(F_.get("rare_freq", 0.01))] + (["--segdup_bed", F_["segdups"]] if F_.get("segdups") else [])
                 for grp, lf in [("onlyasym", F_["asym_loci"]), ("onlymirror", F_["mirror_loci"])]:
                     for dos in ["both", "DUP"]:
-                        ADD.append((f"{grp}_{dos}", ["--exclude_loci", lf, "--exclude_dosage", dos, "--loci_mode", "only"]))
+                        for ref, sfx in refs:
+                            ADD.append((f"{grp}_{dos}{sfx}", ["--exclude_loci", lf, "--exclude_dosage", dos, "--loci_mode", "only",
+                                                              "--only_ref", ref] + RX))
                 for h in (["top5_hi", "phaplo", "union"] if F_.get("phaplo") else ["top5_hi"]):
                     for ex_ in ["all", "noSacks34"]:
                         if h == "top5_hi" and ex_ == "all":

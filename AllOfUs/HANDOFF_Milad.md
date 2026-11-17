@@ -3,6 +3,19 @@
 Sebat lab, 2026-11-16. Code: branch `cnv-gwas` of https://github.com/jsebat/cnv-growth-bmi, folder `AllOfUs/`.
 Questions: Jon.
 
+## Update 2026-11-17 (Jon's decisions on the WGS call density): two AoU datasets
+
+Pull the `cnv-gwas` head (2026-11-17 or later) in the Workbench and in your Expanse clone. Your c4e09df run of prep, gwas and burden stays valid; only the additivity step changes (and a new array config is added).
+
+1. **AoU WGS is analysed as a WGS dataset.** Keep all calls (PASS/MULTIALLELIC, ≥ 10 kb, PGC 10%); do **not** restrict them to look like array calls. Run grid and joint on them as planned.
+2. **"Only"-run reference group in WGS.** Nobody sequenced has zero calls, so the reference is defined for WGS (`figures.only_ref` in `configs/aou_sacks2026.json`):
+   - main: **no rare (< 1%) gene-hitting call** (`no_rare_gene`; your count: 5,511 people). Runs keep the old names (`onlyasym_both`, ...).
+   - sensitivity: no rare gene-hitting call whose midpoint lies outside segmental duplications (`no_rare_gene_nosd`; your count: 14,191). Runs are suffixed `_no_rare_gene_nosd`.
+   - "Rare" uses the PGC frequency rule (same-type calls at ≥ 50% reciprocal overlap) at 1% of the analysed sample; "gene-hitting" uses the model's rules (DEL: any exon; DUP: a whole transcript). `run_info.json` now reports `reference_N` and `locus_carriers_in_sample`; please send Jon both numbers.
+   - UKBB keeps its array reference ("no call"); the methods give each dataset's definition. Rerun only the additivity step: `--steps additivity,scores --strata all`.
+3. **AoU array dataset (next, after the WGS run).** Your array calls, analysed with array specs: `configs/aou_sacks2026_array.json` (see B5).
+4. **No double counting.** The array dataset is restricted to participants **without** srWGS. Main meta = UKBB + AoU arrays; AoU WGS is reported separately, with its heterogeneity against the array estimates.
+
 ## Status (2026-11-16): Part A is done; start at Part B
 
 We ran Part A for you, and every check passed. Use commit `5178737` or later.
@@ -293,9 +306,8 @@ A missing shift file stops the run (`require_shared_shifts`). That is deliberate
 
 1. **Sample sizes.** Check `results/<stratum>/taskA_gwas/<trait>/run_info.json`, `burden/<trait>/run_info.json` and `joint/strata/union_strata_info.json` for N, carriers, union-gene carriers and asymmetric-interval carriers.
 2. **Allele frequencies.** At the S9 loci, compare frequencies with UKBB using `compare_allele_freq.py`. In European ancestry, recurrent CNVs (16p11.2, 22q11.21, 15q11.2 BP1-BP2) should have similar carrier frequencies. A tenfold difference is a call-set or overlap problem, not biology.
-3. **The "only" runs** (`additivity/<trait>/onlyasym_*`, `onlymirror_*`). These keep carriers of the listed intervals plus **people with no CNV call at all**.
-   - On arrays (UKBB) that is a large reference group. With WGS, most people carry at least one call ≥ 10 kb, so the reference group may be small.
-   - Check N in their `run_info.json` and tell Jon the number before relying on Fig. 3H-I (section 6, item 2).
+3. **The "only" runs** (`additivity/<trait>/onlyasym_*`, `onlymirror_*`). These keep carriers of the listed intervals plus a reference group: **no CNV call at all** on arrays (UKBB, AoU arrays), **no rare gene-hitting call** on WGS (Jon 2026-11-17; see the update at the top).
+   - Send Jon `reference_N` and `locus_carriers_in_sample` from each run's `run_info.json` before relying on Fig. 3H-I.
 4. **Small binary terms.** In `additivity_models.tsv`, terms such as `hit_DUP` are presence terms. Check that `hit_carriers_DEL` and `hit_carriers_DUP` in `run_info.json` are > 20; the export removes counts from 1 to 20 but not a beta that rests on them. If one is ≤ 20, tell Jon and leave that run out of the download.
 5. **Genomic inflation.** The Miami plots show probe-level inflation. Large inflation in one stratum usually means a covariate or ancestry problem.
 
@@ -344,6 +356,22 @@ AoU rules (Dissemination Policy, egress alert and large-download pages; checked 
    `aou_results/` is writable by `jsebat-group`.
 4. Tell Jon. He, or you, then runs Part C on Expanse.
 
+### B5. AoU array dataset (Jon 2026-11-17; after the WGS run)
+
+Your array CNV calls, analysed with the same specs as the UKBB array calls. Config: `configs/aou_sacks2026_array.json`. It writes to `~/cnv_anthro_array/`, so it never touches the WGS run.
+
+1. **Fill the three `FILL` entries** in its `prep_commands`:
+   - your array calls in PLINK-CNV format (`FID IID CHR BP1 BP2 TYPE SCORE SITES`, TYPE 1 = DEL, 3 = DUP, **GRCh38**; SITES = probe count);
+   - the list of every array sample that passed sample QC, one IID per line (people with no call must be in it);
+   - a TSV without header, `IID<tab>genotyping batch` (batch is a factor covariate, as in UKBB).
+2. **Tell Jon which caller and sample QC produced the calls.** If they differ from the PGC freeze pipeline, the methods will say so.
+3. **Run** exactly as in B2, with `C=configs/aou_sacks2026_array.json`. The prep step runs `filter_plink_cnv.py`, which:
+   - keeps only participants **not** in `~/cnv_anthro_run/data/sv_samples.txt` (the WGS samples), so the two datasets share no one;
+   - applies the UKBB / PGC freeze filters exactly: autosomes, ≥ 10 kb, ≥ 10 probes, PGC 10% frequency rule;
+   - prints calls per person and the % of people with no call. Expect roughly the UKBB profile (median 1 call, about 20% with none); send Jon the line.
+4. **"Only" runs:** reference = no call (array definition, as UKBB).
+5. **QC and export** as in B3–B4. Name the tarball `aou_array_sacks2026_export_<date>.tar.gz` so it can't be confused with the WGS export.
+
 ## 5. Part C: meta-analysis and final figures (at UCSD)
 
 ### C1. Meta-analysis (Expanse)
@@ -391,10 +419,8 @@ Without these variables, the same scripts draw the current UKBB-only figures. We
    - The UKBB univariate grid, call-size and joint_sacks34 runs predate the code that saves `null_runs.npz`, so they could not be meta-analysed.
    - Jon approved a rerun with the same inputs and the verified shift lists: `results/growthloci_v2_2026-11-16`. It includes the BMI univariate grid on all 45 panels.
    - `assemble_ukbb_reference.py` reads that folder. **Done:** the rerun reproduced the old observed values exactly, and the UKBB export is built from it.
-2. **Reference group of the "only" runs on WGS** (B3, item 3).
-   - In the UKBB 5k test, these runs kept 1,170–1,358 of 4,991 people.
-   - If the AoU reference group is much smaller, the definition may need to change in both cohorts, e.g. to "no gene-hitting call".
-3. **Platform.** UKBB calls come from arrays; AoU calls come from WGS (GATK-SV). WGS finds many more small calls, so burden bins, the "single CNV" groups and gene counts per person are not identical in meaning. The meta tables keep each cohort's estimate and the heterogeneity test; look at I² before interpreting a pooled value.
+2. **Reference group of the "only" runs on WGS** (B3, item 3). **Decided 2026-11-17:** no rare gene-hitting call (WGS), no call (arrays); UKBB is not rerun.
+3. **Platform. Decided 2026-11-17:** AoU WGS (GATK-SV; median 57 calls ≥ 10 kb per person, 55% of midpoints in segdups) and AoU arrays are two datasets with their own specs. UKBB array calls have a median of 1 call per person, 21% of people with none, and 10% of midpoints in segdups. The main meta is UKBB + AoU arrays (participants without WGS); WGS is reported separately with its heterogeneity. Look at I² before interpreting any pooled value.
 4. **Shift matching in AoU.** AoU reuses the UKBB shifts, which were burden-matched to the UKBB CNVs. The null stays a valid rotation in AoU, but the burden match is approximate there. This is the price of replicate-matched meta-analysis.
 
 ## 7. Design notes for the methods
