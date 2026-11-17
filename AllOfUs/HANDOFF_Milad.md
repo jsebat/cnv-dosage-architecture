@@ -3,9 +3,22 @@
 Sebat lab, 2026-11-16. Code: branch `cnv-gwas` of https://github.com/jsebat/cnv-growth-bmi, folder `AllOfUs/`.
 Questions: Jon.
 
+## Update 2026-11-17 (b): burden step fixed (`dup_burden.py` singular matrix in small WGS strata)
+
+Correction to the note below: the c4e09df gwas/alleles/loci/burden outputs are valid for strata **all** and **eur** only. The run stopped at afr/height.
+
+1. **Rank-safe fit.** `dup_burden.py` now drops aliased columns (reported as NaN; df from the kept terms), as `ols()` in `additivity_constraint.py` does. It is identical when the design is full rank. On UKBB the 2026-11-15 outputs are reproduced exactly.
+2. **Small groups.** A model group with fewer than `burden.min_n` people (default 50) is not fitted; its rows are written as NaN.
+3. **Signed-burden panel (Fig. 3O-P) in WGS** (`burden.single_def` in the config). In `aou_sacks2026.json` and `aou_sacks2026_nosegdup.json` it is `rare_gene`: deletion-only, duplication-only, the counts on the x-axis and the hit/HC-gene removals all use **rare (< 1%) gene-hitting calls only**. That is the same rule as the WGS "only"-run reference (`no_rare_gene`). The "none" bin is the people with no rare gene-hitting call. Arrays and UKBB keep `all_calls`. M1–M5 (`dup_burden_models.tsv`) are unchanged.
+4. **run_pipeline.** If one stratum fails, the rest of that stratum is skipped and the other strata still run. At the end the pipeline exits with an error that lists the failed strata, and export is not run.
+
+**Rerun:** because the signed-burden definition changed for WGS, rerun burden in **every** stratum. gwas/alleles/loci are unchanged for all and eur:
+`--steps burden` (all strata), then `--steps gwas,plots,alleles,loci --strata afr,amr,eas,sas,mid,female,male`.
+`burden/<trait>/run_info.json` now reports `single_def` and `single_dosage_N`; please send Jon `single_dosage_N` for all/height.
+
 ## Update 2026-11-17 (Jon's decisions on the WGS call density): two AoU datasets
 
-Pull the `cnv-gwas` head (2026-11-17 or later) in the Workbench and in your Expanse clone. Your c4e09df run of prep, gwas and burden stays valid; only the additivity step changes (and a new array config is added).
+Pull the `cnv-gwas` head (2026-11-17 or later) in the Workbench and in your Expanse clone. Your c4e09df run of prep and gwas stays valid for strata all and eur (see update (b) for burden and the other strata); only the additivity step changes (and a new array config is added).
 
 1. **AoU WGS is analysed as a WGS dataset.** Keep all calls (PASS/MULTIALLELIC, ≥ 10 kb, PGC 10%); do **not** restrict them to look like array calls. Run grid and joint on them as planned.
 2. **"Only"-run reference group in WGS.** Nobody sequenced has zero calls, so the reference is defined for WGS (`figures.only_ref` in `configs/aou_sacks2026.json`):

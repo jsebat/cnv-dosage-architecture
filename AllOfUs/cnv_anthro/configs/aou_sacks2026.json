@@ -245,7 +245,10 @@
   "exons": "../resources/conga/hg38_refGene_20200708.exon.txt",
   "gene_cov": "../resources/conga/gene_covariates.tsv",
   "clingen": "../resources/conga/ClinGen_gene_curation_list_GRCh38.tsv",
-  "asym_loci": "../resources/growth_loci/asymmetric_molly13.tsv"
+  "asym_loci": "../resources/growth_loci/asymmetric_molly13.tsv",
+  "single_def": "rare_gene",
+  "rare_freq": 0.01,
+  "min_n": 50
  },
  "joint": {
   "strata": [
