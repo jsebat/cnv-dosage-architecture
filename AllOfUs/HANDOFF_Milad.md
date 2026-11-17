@@ -14,7 +14,8 @@ Pull the `cnv-gwas` head (2026-11-17 or later) in the Workbench and in your Expa
    - "Rare" uses the PGC frequency rule (same-type calls at ≥ 50% reciprocal overlap) at 1% of the analysed sample; "gene-hitting" uses the model's rules (DEL: any exon; DUP: a whole transcript). `run_info.json` now reports `reference_N` and `locus_carriers_in_sample`; please send Jon both numbers.
    - UKBB keeps its array reference ("no call"); the methods give each dataset's definition. Rerun only the additivity step: `--steps additivity,scores --strata all`.
 3. **AoU array dataset (next, after the WGS run).** Your array calls, analysed with array specs: `configs/aou_sacks2026_array.json` (see B5).
-4. **No double counting.** The array dataset is restricted to participants **without** srWGS. Main meta = UKBB + AoU arrays; AoU WGS is reported separately, with its heterogeneity against the array estimates.
+4. **WGS a second time without the segdup filter:** `configs/aou_sacks2026_nosegdup.json` (see B6).
+5. **No double counting.** The array dataset is restricted to participants **without** srWGS. Main meta = UKBB + AoU arrays; AoU WGS is reported separately, with its heterogeneity against the array estimates.
 
 ## Status (2026-11-16): Part A is done; start at Part B
 
@@ -371,6 +372,15 @@ Your array CNV calls, analysed with the same specs as the UKBB array calls. Conf
    - prints calls per person and the % of people with no call. Expect roughly the UKBB profile (median 1 call, about 20% with none); send Jon the line.
 4. **"Only" runs:** reference = no call (array definition, as UKBB).
 5. **QC and export** as in B3–B4. Name the tarball `aou_array_sacks2026_export_<date>.tar.gz` so it can't be confused with the WGS export.
+
+### B6. AoU WGS without the segdup filter (Jon 2026-11-17)
+
+The WGS dataset runs two ways: the default (`configs/aou_sacks2026.json`) and the whole pipeline again **without the segmental-duplication filter** (`configs/aou_sacks2026_nosegdup.json`).
+
+- The only segdup filter in the pipeline is the CNV GWAS probe filter (probes in segdups are tested but not kept). The new config sets it to none, so segdup probes count in the independent tests and can be lead probes. Everything else is identical: same CNV and phenotype tables, covariates, strata, frequency and carrier-count filters, and shared UKBB shifts.
+- It reuses the tables from the default run's prep step, so run it after that prep (it has no prep step of its own). It writes to `~/cnv_anthro_nosegdup/`.
+- Run it start to finish with the B2 commands and `C=configs/aou_sacks2026_nosegdup.json`, skipping `prep`. Since only the GWAS differs, you can stop after `gwas,plots` and export if Workbench time is short; tell Jon if you do.
+- Name its tarball `aou_wgs_nosegdup_sacks2026_export_<date>.tar.gz`.
 
 ## 5. Part C: meta-analysis and final figures (at UCSD)
 
