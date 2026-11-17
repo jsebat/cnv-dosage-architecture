@@ -25,6 +25,8 @@ def main():
         ap.add_argument(f"--{k}", required=True)
     ap.add_argument("--segdup_frac", type=float, default=0.5); ap.add_argument("--nsets", type=int, default=10000)
     ap.add_argument("--seed", type=int, default=2026)
+    ap.add_argument("--loo_runs", default="", help="leave-one-locus-out units (loo_runs format: run, del_members, dup_members = interval ids); each unit's intervals are dropped from the observed count and from the null (same draws, so the null is matched)")
+    ap.add_argument("--extra_runs", default="", help="extra removal units in the same format (e.g. all of 16p11.2), reported but not counted in the LOO tally")
     a = ap.parse_args(); os.makedirs(a.out, exist_ok=True); rng = np.random.default_rng(a.seed)
     U, ex, tx = load_genes(a.exons); M = len(U)
     gc = pd.read_csv(a.gene_cov, sep="\t", dtype={"entrez": str}); gc.loc[gc.shet_imputed == 1, "shet"] = np.nan
@@ -76,7 +78,17 @@ def main():
         if d:
             relaxed[str(L[namecol][j])] = d
     info["hc_match_relaxed"] = relaxed
-    rows = []
+    ids = L["id"].astype(str).to_numpy() if "id" in L.columns else L[namecol].astype(str).to_numpy()
+    units = []      # (kind, run, boolean mask of intervals kept)
+    for kind, fn in [("loo", a.loo_runs), ("extra", a.extra_runs)]:
+        if fn:
+            for r in pd.read_csv(fn, sep="	", keep_default_na=False).itertuples():
+                mem = set(x for x in (str(r.del_members) + "," + str(r.dup_members)).split(",") if x)
+                drop = np.isin(ids, list(mem))
+                if drop.any():
+                    units.append((kind, str(r.run), ~drop))
+    info["loo_units"] = {u[1]: [str(x) for x in ids[~u[2]]] for u in units}
+    rows, loo_rows = [], []
     allg = np.unique(np.concatenate(sets))
     for trait, tf in [("height", a.twas_height), ("bmi", a.twas_bmi)]:
         for panels in (["gtex_nonbrain"] if trait == "height" else ["gtex_nonbrain", "all"]):
@@ -89,10 +101,16 @@ def main():
                         w = (tw & hc) if genes == "HC" else tw
                         obs = int(w[allg].sum()); per = [int(w[s].sum()) for s in sets]
                         for null in ["genes", "genes+HC"]:
-                            csw = np.r_[0, np.cumsum(w[gidx])]; sims = np.zeros(a.nsets)
+                            csw = np.r_[0, np.cumsum(w[gidx])]; S = np.zeros((len(ks), a.nsets))
                             for j, k in enumerate(ks):
                                 c = cand[j][0] if null == "genes" else cand[j][1]
-                                ws = csw[c + k] - csw[c]; sims += ws[rng.integers(len(c), size=a.nsets)]
+                                ws = csw[c + k] - csw[c]; S[j] = ws[rng.integers(len(c), size=a.nsets)]
+                            sims = S.sum(0)
+                            for kind, run, kp in units:     # matched LOO null: the same window draws without the dropped intervals
+                                so = int(np.asarray(per)[kp].sum()); sl = S[kp].sum(0); mu_, sd_ = sl.mean(), sl.std(ddof=1)
+                                loo_rows.append(dict(trait=trait, panels=panels, tissue=tissue, cut=cut, genes=genes, null=null, kind=kind, run=run,
+                                                     observed_sum=so, null_mean=mu_, null_sd=sd_, ratio=so / mu_ if mu_ > 0 else np.nan,
+                                                     z=(so - mu_) / sd_ if sd_ > 0 else np.nan, P_upper=(1 + np.sum(sl >= so)) / (a.nsets + 1)))
                             # observed uses the union (overlapping intervals counted once); null windows are drawn independently,
                             # so also report the observed sum over intervals (same counting as the null)
                             osum = int(sum(per))
@@ -107,6 +125,16 @@ def main():
                             pd.DataFrame(dict(interval=L[namecol].astype(str), n_genes=ks, n_hc=nhcs, n_twas=per)).to_csv(
                                 os.path.join(a.out, f"per_interval_{trait}_{panels}_{tissue}_HC_c3.tsv"), sep="\t", index=False)
     pd.DataFrame(rows).to_csv(os.path.join(a.out, "twas_enrichment_intervals.tsv"), sep="\t", index=False, float_format="%.5g")
+    if loo_rows:
+        LR = pd.DataFrame(loo_rows); LR.to_csv(os.path.join(a.out, "twas_enrichment_loo.tsv"), sep="	", index=False, float_format="%.5g")
+        R = pd.DataFrame(rows); key = ["trait", "panels", "tissue", "cut", "genes", "null"]
+        lo = LR[LR.kind == "loo"]
+        g = lo.groupby(key).agg(loo_n=("P_upper", "size"), loo_held=("P_upper", lambda p: int((p < 0.05).sum())), loo_Pmax=("P_upper", "max"),
+                                weakest=("P_upper", lambda p: lo.loc[p.idxmax(), "run"])).reset_index()
+        for run in LR[LR.kind == "extra"].run.unique():
+            x = LR[(LR.kind == "extra") & (LR.run == run)][key + ["observed_sum", "null_mean", "z", "P_upper"]]
+            x.columns = key + [f"x_{run}_{c}" for c in ["observed", "null_mean", "z", "P"]]; g = g.merge(x, on=key, how="left")
+        R.merge(g, on=key, how="left").to_csv(os.path.join(a.out, "twas_enrichment_intervals_loo_summary.tsv"), sep="	", index=False, float_format="%.5g")
     json.dump(info, open(os.path.join(a.out, "run_info.json"), "w"), indent=1)
 
 

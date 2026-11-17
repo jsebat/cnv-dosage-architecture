@@ -193,6 +193,8 @@ def main():
     ap.add_argument("--major_loci", default="", help="drivers: fixed comma list of major LOO families (e.g. from UKBB) instead of the observed selection, so cohorts share the same runs for meta-analysis")
     ap.add_argument("--segdup_bed", default="", help="drop genes with >= --segdup_frac of their exonic bases in segmental duplications (Jon 2026-11-16)")
     ap.add_argument("--segdup_frac", type=float, default=0.5)
+    ap.add_argument("--extra_runs", default="", help="extra removal runs (loo_runs format), each with its own matched null, reported as x_<run>_* columns and NOT counted in the LOO tally (e.g. 16p11.2 proximal + distal together)")
+    ap.add_argument("--no_overlap34", action="store_true", help="also fit the strict no_overlap34 run (always on with --loo_mode none)")
     ap.add_argument("--perms_only", action="store_true", help="compute/save the shared shifts (--perms_file) and exit")
     ap.add_argument("--perms_file", default="", help="shared genome shifts: load the shift offsets from this .npy if it exists (cohorts then share null replicates); else compute and save them here")
     a = ap.parse_args()
@@ -236,7 +238,11 @@ def main():
         md = set(x for x in str(r.del_members).split(",") if x); mu = set(x for x in str(r.dup_members).split(",") if x)
         drop = (is_del & np.isin(lab, list(md))) | (~is_del & np.isin(lab, list(mu))); runs[f"loo_{r.run}"] = ~drop; union |= drop
     runs["no_loci"] = ~union
-    if a.loo_mode == "none":    # strict removal (Jon 2026-11-16, size bins): drop every call overlapping any locus interval by >= 1 bp, either
+    if a.extra_runs:
+        for r in pd.read_csv(a.extra_runs, sep="	", keep_default_na=False).itertuples():
+            md = set(x for x in str(r.del_members).split(",") if x); mu = set(x for x in str(r.dup_members).split(",") if x)
+            runs[f"x_{r.run}"] = ~((is_del & np.isin(lab, list(md))) | (~is_del & np.isin(lab, list(mu))))
+    if a.loo_mode == "none" or a.no_overlap34:    # strict removal (Jon 2026-11-16, size bins): drop every call overlapping any locus interval by >= 1 bp, either
         ov = np.zeros(len(cnv), bool)   # dosage (no_loci keeps e.g. a 3 Mb call spanning a 600 kb interval: reciprocal overlap < 50%)
         a_, b_, ch_ = cnv.BP1.to_numpy(), cnv.BP2.to_numpy(), cnv.CHR.to_numpy()
         for L in loci.itertuples():
@@ -403,6 +409,8 @@ def main():
             if "no_overlap34" in runs:
                 o4, z4, p4 = emp("no_overlap34")
                 row.update(noloci_t=o2, nooverlap_t=o4, nooverlap_z_emp=z4, nooverlap_P_emp=p4)
+            for rn in [r for r in runs if r.startswith("x_")]:
+                ox, zx, px = emp(rn); row.update({f"{rn}_t": ox, f"{rn}_z_emp": zx, f"{rn}_P_emp": px})
             if info["loo_mode"] in ("drivers", "all_minor"):
                 o3, z3, p3 = emp("minor_all")
                 row.update(minor_all_z_emp=z3, minor_all_P_emp=p3, major_loci=";".join(info["major_loci"]))
