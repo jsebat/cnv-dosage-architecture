@@ -35,6 +35,45 @@ from conga_axes_qt import load_genes, incidence, assign_loci, SHET_CUT
 TCUT = {"c1": 1.0, "c2": 2.0, "c3": 3.0, "c4": 4.0}
 
 
+def merge_iv(s, e):
+    """Union of intervals (sorted output)."""
+    o = np.argsort(s, kind="stable"); s, e = s[o], e[o]
+    if len(s) == 0:
+        return s, e
+    ce = np.maximum.accumulate(e); new = np.r_[True, s[1:] > ce[:-1]]
+    return s[new], np.maximum.reduceat(ce, np.flatnonzero(new))
+
+
+def segdup_fraction(ex, M, bed):
+    """Per gene: fraction of its exonic bases (union over transcripts) inside segmental duplications (union of the BED)."""
+    sd = pd.read_csv(bed, sep="\t", header=None, usecols=[0, 1, 2], dtype={0: str}, comment="#")
+    sd = sd[sd[0].str.match(r"^(chr)?[0-9]+$")]; sd[0] = sd[0].str.replace("chr", "").astype(int)
+    tot = np.zeros(M); ins = np.zeros(M)
+    for c, f in ex.groupby("c"):
+        b = sd[sd[0] == c]; S, E = merge_iv(b[1].to_numpy(np.int64), b[2].to_numpy(np.int64))
+        cum = np.r_[0, np.cumsum(E - S)]
+        def cov(x):                                  # covered bases in [0, x)
+            i = np.searchsorted(S, x, "right") - 1
+            return np.where(i >= 0, cum[np.maximum(i, 0)] + np.clip(x - S[np.maximum(i, 0)], 0, (E - S)[np.maximum(i, 0)]), 0) if len(S) else np.zeros(len(x))
+        for g, fg in f.groupby("gidx"):
+            s, e = merge_iv(fg.start.to_numpy(np.int64), fg.end.to_numpy(np.int64))
+            g = int(g); tot[g] += (e - s).sum(); ins[g] += (cov(e) - cov(s)).sum()
+    return np.divide(ins, tot, out=np.zeros(M), where=tot > 0)
+
+
+def class_mask(c, ng, kb):
+    """Call class of a term prefix 'c~<measure>': L<k> = calls hitting > k genes of their dosage, S<k> = <= k (gene rule as the measure);
+    N<lo>_<hi> = lo <= genes <= hi (hi 'inf' allowed); Z<lo>_<hi> = lo <= call length (kb) < hi (Jon 2026-11-16: size bins 300 kb-1 Mb, > 1 Mb)."""
+    if c[0] in "LS":
+        return (ng > int(c[1:])) if c[0] == "L" else (ng <= int(c[1:]))
+    lo, hi = c[1:].split("_"); lo = float(lo); hi = np.inf if hi == "inf" else float(hi)
+    if c[0] == "N":
+        return (ng >= lo) & (ng <= hi)
+    if c[0] == "Z":
+        return (kb >= lo) & (kb < hi)
+    raise ValueError(c)
+
+
 def twas_z_both(twas_file, panels, U, gene_cov):
     tw = pd.read_csv(twas_file, sep=r"\s+")
     tw["TWAS.Z"] = pd.to_numeric(tw["TWAS.Z"], errors="coerce"); tw = tw[np.isfinite(tw["TWAS.Z"])]
@@ -148,10 +187,12 @@ def main():
     ap.add_argument("--nrep", type=int, default=1000); ap.add_argument("--seed", type=int, default=2026)
     ap.add_argument("--numeric", default="age,age2,PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10")
     ap.add_argument("--factors", default="sex,batch"); ap.add_argument("--out", required=True)
-    ap.add_argument("--loo_mode", default="all", choices=["all", "drivers", "all_minor"], help="all = matched null for every single-locus removal; drivers = only major loci individually + minor loci together")
+    ap.add_argument("--loo_mode", default="all", choices=["all", "drivers", "all_minor", "none"], help="all = matched null for every single-locus removal; drivers = only major loci individually + minor loci together; none = full, no_loci and no_overlap34 only (no single-locus removals)")
     ap.add_argument("--major_dt", type=float, default=1.0, help="drivers: a locus family is major if dropping it moves any readout t by >= this")
     ap.add_argument("--max_major", type=int, default=8)
     ap.add_argument("--major_loci", default="", help="drivers: fixed comma list of major LOO families (e.g. from UKBB) instead of the observed selection, so cohorts share the same runs for meta-analysis")
+    ap.add_argument("--segdup_bed", default="", help="drop genes with >= --segdup_frac of their exonic bases in segmental duplications (Jon 2026-11-16)")
+    ap.add_argument("--segdup_frac", type=float, default=0.5)
     ap.add_argument("--perms_only", action="store_true", help="compute/save the shared shifts (--perms_file) and exit")
     ap.add_argument("--perms_file", default="", help="shared genome shifts: load the shift offsets from this .npy if it exists (cohorts then share null replicates); else compute and save them here")
     a = ap.parse_args()
@@ -167,6 +208,14 @@ def main():
     cnv = read_plink_cnv(a.cnv, keep_iids=ph.IID); cnv = cnv[cnv.CHR <= 22].reset_index(drop=True)
     cnv["row"] = pd.Series(np.arange(N), index=ph.IID).loc[cnv.IID].to_numpy()
     U, ex, tx = load_genes(a.exons); M = len(U)
+    keep_g = np.ones(M, bool)
+    if a.segdup_bed:                    # genes mostly inside segmental duplications: ambiguous calls / NAHR clusters (Jon 2026-11-16)
+        fsd = segdup_fraction(ex, M, a.segdup_bed); keep_g = fsd < a.segdup_frac
+    Dk = sparse.diags(keep_g.astype(float))
+    def inc(*args):                     # person x gene incidence with the excluded genes zeroed (they count for nothing, n_all included)
+        if not a.segdup_bed:
+            return incidence(*args)
+        G_ = (incidence(*args) @ Dk).tocsr(); G_.eliminate_zeros(); return G_
     gc = pd.read_csv(a.gene_cov, sep="\t", dtype={"entrez": str}); gc.loc[gc.shet_imputed == 1, "shet"] = np.nan
     shet = U[["entrez"]].merge(gc[["entrez", "shet"]], on="entrez", how="left").shet.to_numpy()
     q95 = float(np.nanquantile(gc.shet.to_numpy(float), 0.95))
@@ -176,6 +225,8 @@ def main():
     Z, npan = twas_z_both(a.twas, a.panels, U, gc)
     info = dict(trait=a.trait, N=int(N), panels=a.panels, n_panels=npan, q95_shet=q95, clingen_HI_genes_in_circle=int(hi.sum()),
                 genes_twas=int(np.isfinite(Z["scaled"]).sum()), variants=[v["name"] for v in design], nrep=a.nrep, seed=a.seed)
+    if a.segdup_bed:
+        info.update(segdup_bed=os.path.basename(a.segdup_bed), segdup_frac=a.segdup_frac, genes_excluded_segdup=int((~keep_g).sum()), genes_total=int(M))
 
     # runs: full, 18 LOO, no_loci (as conga_axes_qt.py)
     loci = pd.read_csv(a.loci, sep="\t"); lab = assign_loci(cnv, loci)
@@ -185,9 +236,15 @@ def main():
         md = set(x for x in str(r.del_members).split(",") if x); mu = set(x for x in str(r.dup_members).split(",") if x)
         drop = (is_del & np.isin(lab, list(md))) | (~is_del & np.isin(lab, list(mu))); runs[f"loo_{r.run}"] = ~drop; union |= drop
     runs["no_loci"] = ~union
+    if a.loo_mode == "none":    # strict removal (Jon 2026-11-16, size bins): drop every call overlapping any locus interval by >= 1 bp, either
+        ov = np.zeros(len(cnv), bool)   # dosage (no_loci keeps e.g. a 3 Mb call spanning a 600 kb interval: reciprocal overlap < 50%)
+        a_, b_, ch_ = cnv.BP1.to_numpy(), cnv.BP2.to_numpy(), cnv.CHR.to_numpy()
+        for L in loci.itertuples():
+            ov |= (ch_ == int(L.chr)) & (a_ <= L.end) & (b_ >= L.start)
+        runs["no_overlap34"] = ~ov
 
     # null shifts: identical to conga_axes_qt.py (scaled z categories), so every task with the same seed/nrep shares them
-    Gd0 = incidence(cnv[cnv.TYPE == 1], ex, "overlap", N, M); Gu0 = incidence(cnv[cnv.TYPE == 3], tx, "within", N, M)
+    Gd0 = inc(cnv[cnv.TYPE == 1], ex, "overlap", N, M); Gu0 = inc(cnv[cnv.TYPE == 3], tx, "within", N, M)
     cc = np.asarray(Gd0.sum(0)).ravel() + np.asarray(Gu0.sum(0)).ravel()
     zs = np.nan_to_num(Z["scaled"], nan=0.0)
     cats = [zs > 3, zs < -3, np.nan_to_num(shet, nan=-1) > SHET_CUT]
@@ -228,19 +285,27 @@ def main():
         ng = np.zeros(len(cnv))
         for typ, feats, mode in [(1, ex, "overlap"), (3, tx, "within")]:
             m = (cnv.TYPE == typ).to_numpy()
-            ng[m] = incidence(cc_[m], feats, mode, len(cnv), M).getnnz(axis=1)[m]
-        cnv["n_genes_call"] = ng
-        info["calls_by_class"] = {c: {"DEL": int(((cnv.TYPE == 1) & ((ng > int(c[1:])) if c[0] == "L" else (ng <= int(c[1:])))).sum()),
-                                      "DUP": int(((cnv.TYPE == 3) & ((ng > int(c[1:])) if c[0] == "L" else (ng <= int(c[1:])))).sum())} for c in classes}
+            ng[m] = inc(cc_[m], feats, mode, len(cnv), M).getnnz(axis=1)[m]
+        cnv["n_genes_call"] = ng; cnv["kb_call"] = (cnv.BP2 - cnv.BP1 + 1) / 1000.0
+        info["calls_by_class"] = {}
+        for rn_, sel_ in [("full", runs["full"]), ("no_loci", runs["no_loci"])] + ([("no_overlap34", runs["no_overlap34"])] if "no_overlap34" in runs else []):
+            c_ = cnv[sel_]
+            for c in classes:
+                cm = class_mask(c, c_.n_genes_call.to_numpy(), c_.kb_call.to_numpy())
+                for typ, dn in [(1, "DEL"), (3, "DUP")]:
+                    s = c_[(c_.TYPE == typ).to_numpy() & cm]
+                    info["calls_by_class"][f"{rn_}:{c}:{dn}"] = dict(calls=int(len(s)), carriers=int(s.IID.nunique()),
+                                                                     median_genes=float(s.n_genes_call.median()) if len(s) else None,
+                                                                     median_kb=float(s.kb_call.median()) if len(s) else None)
     def build_rd(rname, sel):
         c_ = cnv[sel]
-        Gd = Gd0 if rname == "full" else incidence(c_[c_.TYPE == 1], ex, "overlap", N, M)
-        Gu = Gu0 if rname == "full" else incidence(c_[c_.TYPE == 3], tx, "within", N, M)
+        Gd = Gd0 if rname == "full" else inc(c_[c_.TYPE == 1], ex, "overlap", N, M)
+        Gu = Gu0 if rname == "full" else inc(c_[c_.TYPE == 3], tx, "within", N, M)
         extra = {}
         for c in classes:
-            kk = int(c[1:]); cm = (c_.n_genes_call > kk) if c[0] == "L" else (c_.n_genes_call <= kk)
-            extra[f"DEL:{c}"] = incidence(c_[(c_.TYPE == 1) & cm], ex, "overlap", N, M)
-            extra[f"DUP:{c}"] = incidence(c_[(c_.TYPE == 3) & cm], tx, "within", N, M)
+            cm = class_mask(c, c_.n_genes_call.to_numpy(), c_.kb_call.to_numpy())
+            extra[f"DEL:{c}"] = inc(c_[(c_.TYPE == 1) & cm], ex, "overlap", N, M)
+            extra[f"DUP:{c}"] = inc(c_[(c_.TYPE == 3) & cm], tx, "within", N, M)
         return RunData(Gd, Gu, Q, yr, yy, N, k, extra)
 
     def observed(RD, rname):
@@ -278,6 +343,8 @@ def main():
         info["major_loci"] = [r.replace("loo_", "") for r in majors]
         obs = [o for o in obs if o["run"] not in null_runs]      # null runs are refitted (observed + null) below
         loo = majors
+    elif a.loo_mode == "none":
+        null_runs = ["full", "no_loci", "no_overlap34"]; loo = []; info["loo_mode"] = "none"
     else:
         if a.loo_mode == "all_minor":       # Jon 2026-11-15: every single-unit removal AND the drivers-kept null (all non-driver units dropped)
             majors = [f"loo_{x}" for x in a.major_loci.split(",") if f"loo_{x}" in runs]
@@ -333,6 +400,9 @@ def main():
             row = dict(trait=a.trait, panels=a.panels, variant=v["name"], readout=nm, t_analytic=o, z_emp=ze, P_emp=pe,
                        loo_held=held, loo_n=len(loo), loo_reversed=rev, weakest=wk.replace("loo_", ""), weakest_z=fin.get(wk, np.nan),
                        P_minLOO_matched=pmin, noloci_z_emp=z2, noloci_P_emp=p2, nrep=a.nrep, loo_mode=info["loo_mode"])
+            if "no_overlap34" in runs:
+                o4, z4, p4 = emp("no_overlap34")
+                row.update(noloci_t=o2, nooverlap_t=o4, nooverlap_z_emp=z4, nooverlap_P_emp=p4)
             if info["loo_mode"] in ("drivers", "all_minor"):
                 o3, z3, p3 = emp("minor_all")
                 row.update(minor_all_z_emp=z3, minor_all_P_emp=p3, major_loci=";".join(info["major_loci"]))

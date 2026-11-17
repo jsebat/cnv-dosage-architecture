@@ -1,0 +1,22 @@
+[
+ {"name": "bp:g:HC:sum:uns:scaled", "DEL": ["n_all", "Z0_300~g:HC:sum:uns:scaled", "Z300_1000~g:HC:sum:uns:scaled", "Z1000_inf~g:HC:sum:uns:scaled"],
+                                    "DUP": ["n_all", "Z0_300~g:HC:sum:uns:scaled", "Z300_1000~g:HC:sum:uns:scaled", "Z1000_inf~g:HC:sum:uns:scaled"]},
+ {"name": "ng:g:HC:sum:uns:scaled", "DEL": ["n_all", "N0_5~g:HC:sum:uns:scaled", "N6_15~g:HC:sum:uns:scaled", "N16_inf~g:HC:sum:uns:scaled"],
+                                    "DUP": ["n_all", "N0_5~g:HC:sum:uns:scaled", "N6_15~g:HC:sum:uns:scaled", "N16_inf~g:HC:sum:uns:scaled"]},
+ {"name": "bp:g:HC:c3:sig:mean", "DEL": ["n_all", "Z0_300~g:HC:c3:sig:mean", "Z300_1000~g:HC:c3:sig:mean", "Z1000_inf~g:HC:c3:sig:mean"],
+                                 "DUP": ["n_all", "Z0_300~g:HC:c3:sig:mean", "Z300_1000~g:HC:c3:sig:mean", "Z1000_inf~g:HC:c3:sig:mean"]},
+ {"name": "ng:g:HC:c3:sig:mean", "DEL": ["n_all", "N0_5~g:HC:c3:sig:mean", "N6_15~g:HC:c3:sig:mean", "N16_inf~g:HC:c3:sig:mean"],
+                                 "DUP": ["n_all", "N0_5~g:HC:c3:sig:mean", "N6_15~g:HC:c3:sig:mean", "N16_inf~g:HC:c3:sig:mean"]},
+ {"name": "bp:g:HC:c3:uns:mean", "DEL": ["n_all", "Z0_300~g:HC:c3:uns:mean", "Z300_1000~g:HC:c3:uns:mean", "Z1000_inf~g:HC:c3:uns:mean"],
+                                 "DUP": ["n_all", "Z0_300~g:HC:c3:uns:mean", "Z300_1000~g:HC:c3:uns:mean", "Z1000_inf~g:HC:c3:uns:mean"]},
+ {"name": "ng:g:HC:c3:uns:mean", "DEL": ["n_all", "N0_5~g:HC:c3:uns:mean", "N6_15~g:HC:c3:uns:mean", "N16_inf~g:HC:c3:uns:mean"],
+                                 "DUP": ["n_all", "N0_5~g:HC:c3:uns:mean", "N6_15~g:HC:c3:uns:mean", "N16_inf~g:HC:c3:uns:mean"]},
+ {"name": "bp:g:all:sum:uns:scaled", "DEL": ["n_all", "Z0_300~g:all:sum:uns:scaled", "Z300_1000~g:all:sum:uns:scaled", "Z1000_inf~g:all:sum:uns:scaled"],
+                                     "DUP": ["n_all", "Z0_300~g:all:sum:uns:scaled", "Z300_1000~g:all:sum:uns:scaled", "Z1000_inf~g:all:sum:uns:scaled"]},
+ {"name": "ng:g:all:sum:uns:scaled", "DEL": ["n_all", "N0_5~g:all:sum:uns:scaled", "N6_15~g:all:sum:uns:scaled", "N16_inf~g:all:sum:uns:scaled"],
+                                     "DUP": ["n_all", "N0_5~g:all:sum:uns:scaled", "N6_15~g:all:sum:uns:scaled", "N16_inf~g:all:sum:uns:scaled"]},
+ {"name": "bp:g:HC:c4:uns:mean", "DEL": ["n_all", "Z0_300~g:HC:c4:uns:mean", "Z300_1000~g:HC:c4:uns:mean", "Z1000_inf~g:HC:c4:uns:mean"],
+                                 "DUP": ["n_all", "Z0_300~g:HC:c4:uns:mean", "Z300_1000~g:HC:c4:uns:mean", "Z1000_inf~g:HC:c4:uns:mean"]},
+ {"name": "ng:g:HC:c4:uns:mean", "DEL": ["n_all", "N0_5~g:HC:c4:uns:mean", "N6_15~g:HC:c4:uns:mean", "N16_inf~g:HC:c4:uns:mean"],
+                                 "DUP": ["n_all", "N0_5~g:HC:c4:uns:mean", "N6_15~g:HC:c4:uns:mean", "N16_inf~g:HC:c4:uns:mean"]}
+]
