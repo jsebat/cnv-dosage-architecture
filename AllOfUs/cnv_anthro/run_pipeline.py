@@ -58,7 +58,10 @@ def make_stratum(pheno, filt, raw_of, out_path):
     """Filter the phenotype table and re-rank the traits within sex inside the stratum."""
     P = pd.read_csv(pheno, sep="\t", dtype={"IID": str})
     for col, vals in (filt or {}).items():
-        P = P[P[col].astype(str).isin([str(v) for v in vals])]
+        if pd.api.types.is_numeric_dtype(P[col]):   # AoU sex was written as 1.0/2.0: "2.0" never matched "2" (Milad 2026-11-18)
+            P = P[P[col].isin(pd.to_numeric(pd.Series([str(v) for v in vals]), errors="coerce"))]
+        else:
+            P = P[P[col].astype(str).isin([str(v) for v in vals])]
     for rcol, raw in raw_of.items():
         if raw in P.columns:
             P[rcol] = rint_within(P[raw].to_numpy(float), P["sex"].to_numpy())

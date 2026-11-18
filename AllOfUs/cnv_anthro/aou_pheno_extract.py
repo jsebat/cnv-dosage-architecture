@@ -63,6 +63,7 @@ def main():
     P["sex_name"] = P.sex_name.fillna(P.sex_name_b)
     P["sex"] = P.sex_name.map({"Male": 1, "Female": 2})
     P = P[P.sex.notna()].reset_index().rename(columns={"person_id": "IID"})
+    P["sex"] = P.sex.astype(int)                     # written as 1/2, not 1.0/2.0 (Milad 2026-11-18)
     P["IID"] = P.IID.astype(str)
     keep = set(l.strip() for l in open(a.keep_samples))
     log["with_trait_and_sex"] = int(len(P)); P = P[P.IID.isin(keep)]; log["in_cnv_source"] = int(len(P))
