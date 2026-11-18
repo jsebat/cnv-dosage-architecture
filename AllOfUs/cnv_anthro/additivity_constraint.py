@@ -93,6 +93,9 @@ def main():
     ap.add_argument("--rare_freq", type=float, default=0.01,
                     help="rare = carried by < this fraction of the sample (same-type calls at >= 50%% reciprocal overlap, the PGC frequency rule)")
     ap.add_argument("--segdup_bed", default="", help="segmental duplications BED (needed for --only_ref no_rare_gene_nosd)")
+    ap.add_argument("--ref_exclude_loci", default="",
+                    help="'only' runs with a no_rare_gene* reference: carriers of these intervals (either dosage) never enter the reference "
+                         "(loci_sacks34.tsv), so the reference is the same in every run (Jon 2026-11-18)")
     a = ap.parse_args(); os.makedirs(a.out, exist_ok=True)
     ph = pd.read_csv(a.pheno, sep="\t", dtype={"IID": str})
     num = [c for c in a.numeric.split(",") if c]; fac = [c for c in a.factors.split(",") if c]
@@ -124,6 +127,18 @@ def main():
         else:
             q = qualifying_calls(cnv, len(ph), a.rare_freq, a.exons, a.segdup_bed if a.only_ref == "no_rare_gene_nosd" else None)
             drop = set(cnv.IID[q]) - hit
+            if a.ref_exclude_loci:
+                # Jon 2026-11-18: under _nosd a locus carrier whose call midpoint is in a segdup has no qualifying call, so it fell into
+                # the reference of runs that do not include its locus (49 people in AoU). Carriers of any of these intervals stay out.
+                R = pd.read_csv(a.ref_exclude_loci, sep="\t")
+                R = R.rename(columns={c: c.upper() for c in R.columns if c.lower() in ("name", "chr", "start", "end")})
+                R = R.drop_duplicates(["NAME", "CHR", "START", "END"]); rx = set()
+                for l in R.itertuples():
+                    c_ = cnv[(cnv.CHR == l.CHR) & (cnv.BP2 >= l.START) & (cnv.BP1 <= l.END)]
+                    ov = (np.minimum(c_.BP2, l.END) - np.maximum(c_.BP1, l.START)).clip(lower=0)
+                    rx |= set(c_.IID[(ov >= 0.5 * (l.END - l.START)) & (ov >= 0.5 * (c_.BP2 - c_.BP1))])
+                n_rx = len(rx - hit - drop)
+                drop |= rx - hit
         ph = ph[~ph.IID.isin(drop)].reset_index(drop=True)
         Zc, _ = design_matrix(ph, num, fac); Q, _ = np.linalg.qr(Zc); N = len(ph)
         y = ph[a.trait].to_numpy(float); yr = y - Q @ (Q.T @ y)
@@ -132,7 +147,9 @@ def main():
         if a.loci_mode == "only":
             excl.update(only_ref=a.only_ref, reference_N=int(N - ph.IID.isin(hit).sum()), locus_carriers_in_sample=int(ph.IID.isin(hit).sum()))
             if a.only_ref != "nocall":
-                excl.update(rare_freq=a.rare_freq, segdup_bed=os.path.basename(a.segdup_bed) if a.only_ref == "no_rare_gene_nosd" else None)
+                excl.update(rare_freq=a.rare_freq, segdup_bed=os.path.basename(a.segdup_bed) if a.only_ref == "no_rare_gene_nosd" else None,
+                            ref_exclude_loci=os.path.basename(a.ref_exclude_loci) or None,
+                            ref_excluded_locus_carriers=n_rx if a.ref_exclude_loci else 0)
     cnv["row"] = pd.Series(np.arange(N), index=ph.IID).loc[cnv.IID].to_numpy()
     U, ex, tx = load_genes(a.exons); M = len(U)
     gc = pd.read_csv(a.gene_cov, sep="\t", dtype={"entrez": str}); gc.loc[gc.shet_imputed == 1, "shet"] = np.nan

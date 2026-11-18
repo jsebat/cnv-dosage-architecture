@@ -194,7 +194,8 @@ def main():
                     # "only" runs: reference group = figures.only_ref (nocall = arrays/UKBB; no_rare_gene = WGS, Jon 2026-11-17), named
                     # onlyasym_<dos> as before; figures.only_ref_sensitivity adds the same runs with other references, suffixed _<ref>
                     refs = [(F_.get("only_ref", "nocall"), "")] + [(r, f"_{r}") for r in F_.get("only_ref_sensitivity", [])]
-                    RX = ["--rare_freq", str(F_.get("rare_freq", 0.01))] + (["--segdup_bed", F_["segdups"]] if F_.get("segdups") else [])
+                    RX = ["--rare_freq", str(F_.get("rare_freq", 0.01))] + (["--segdup_bed", F_["segdups"]] if F_.get("segdups") else []) \
+                         + (["--ref_exclude_loci", F_["sacks_loci"]] if F_.get("sacks_loci") else [])       # Jon 2026-11-18: no 34-interval carrier in any reference
                     for grp, lf in [("onlyasym", F_["asym_loci"]), ("onlymirror", F_["mirror_loci"])]:
                         for dos in ["both", "DUP"]:
                             for ref, sfx in refs:
