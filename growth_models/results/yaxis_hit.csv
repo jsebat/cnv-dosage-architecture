@@ -1,0 +1,51 @@
+trait,model,AIC,term,b,z,loci
+Height,ConGA DUP fit + presence,-5.33668652632542,int,-0.05,-0.95,34
+Height,ConGA DUP fit + presence,-5.33668652632542,nall,0.001,0.14,34
+Height,ConGA DUP fit + presence,-5.33668652632542,countA,0.068,1.54,34
+Height,ConGA DUP fit + presence,-5.33668652632542,noneH,0.006,0.23,34
+Height,ConGA DUP fit + presence,-5.33668652632542,pres,-0.073,-0.65,34
+Height,ConGA DUP fit with unsigned count + presence,-16.3913834942824,int,-0.058,-1.37,34
+Height,ConGA DUP fit with unsigned count + presence,-16.3913834942824,nall,0.001,0.29,34
+Height,ConGA DUP fit with unsigned count + presence,-16.3913834942824,countU,0.095,3.82,34
+Height,ConGA DUP fit with unsigned count + presence,-16.3913834942824,noneH,-0.007,-0.3,34
+Height,ConGA DUP fit with unsigned count + presence,-16.3913834942824,pres,-0.218,-2.38,34
+Height,mirror line from the deletion effect + presence,-36.6120781971634,int,-0.09,-3.35,34
+Height,mirror line from the deletion effect + presence,-36.6120781971634,del,-0.474,-6.71,34
+Height,mirror line from the deletion effect + presence,-36.6120781971634,pres,-0.236,-4.21,34
+Height,mirror line + presence + top-5% count,-39.7726389452906,int,-0.095,-3.76,34
+Height,mirror line + presence + top-5% count,-39.7726389452906,del,-0.517,-7.46,34
+Height,mirror line + presence + top-5% count,-39.7726389452906,pres,-0.012,-0.11,34
+Height,mirror line + presence + top-5% count,-39.7726389452906,n95,-0.154,-2.22,34
+Height,mirror line + top-5% count,-41.7614130623662,int,-0.096,-3.91,34
+Height,mirror line + top-5% count,-41.7614130623662,del,-0.517,-7.58,34
+Height,mirror line + top-5% count,-41.7614130623662,n95,-0.161,-5.06,34
+Height,mirror line + none_H count,-35.37528275145,int,-0.044,-1.39,34
+Height,mirror line + none_H count,-35.37528275145,del,-0.527,-6.73,34
+Height,mirror line + none_H count,-35.37528275145,noneH,-0.035,-4.04,34
+Height,mirror line only,-23.2614088255788,int,-0.123,-3.77,34
+Height,mirror line only,-23.2614088255788,del,-0.346,-4.41,34
+BMI,ConGA DUP fit + presence,-4.3674538486647,int,-0.025,-0.5,34
+BMI,ConGA DUP fit + presence,-4.3674538486647,nall,-0.002,-0.44,34
+BMI,ConGA DUP fit + presence,-4.3674538486647,countA,0.057,1.2,34
+BMI,ConGA DUP fit + presence,-4.3674538486647,noneH,0.04,1.48,34
+BMI,ConGA DUP fit + presence,-4.3674538486647,pres,-0.222,-2.11,34
+BMI,ConGA DUP fit with unsigned count + presence,-7.77929152534458,int,-0.02,-0.41,34
+BMI,ConGA DUP fit with unsigned count + presence,-7.77929152534458,nall,-0.002,-0.37,34
+BMI,ConGA DUP fit with unsigned count + presence,-7.77929152534458,countU,-0.043,-2.14,34
+BMI,ConGA DUP fit with unsigned count + presence,-7.77929152534458,noneH,0.041,1.62,34
+BMI,ConGA DUP fit with unsigned count + presence,-7.77929152534458,pres,-0.116,-1.02,34
+BMI,mirror line from the deletion effect + presence,-33.222647950005,int,0.055,2.25,33
+BMI,mirror line from the deletion effect + presence,-33.222647950005,del,-0.495,-7.06,33
+BMI,mirror line from the deletion effect + presence,-33.222647950005,pres,0.037,0.69,33
+BMI,mirror line + presence + top-5% count,-38.3422942605979,int,0.055,2.64,33
+BMI,mirror line + presence + top-5% count,-38.3422942605979,del,-0.4,-5.73,33
+BMI,mirror line + presence + top-5% count,-38.3422942605979,pres,-0.304,-2.29,33
+BMI,mirror line + presence + top-5% count,-38.3422942605979,n95,0.199,2.72,33
+BMI,mirror line + top-5% count,-35.0596017085028,int,0.048,2.05,33
+BMI,mirror line + top-5% count,-35.0596017085028,del,-0.491,-7.65,33
+BMI,mirror line + top-5% count,-35.0596017085028,n95,0.042,1.48,33
+BMI,mirror line + none_H count,-39.5071568677638,int,0.012,0.41,33
+BMI,mirror line + none_H count,-39.5071568677638,del,-0.504,-8.26,33
+BMI,mirror line + none_H count,-39.5071568677638,noneH,0.016,2.59,33
+BMI,mirror line only,-34.7253555358128,int,0.062,2.84,33
+BMI,mirror line only,-34.7253555358128,del,-0.478,-7.38,33

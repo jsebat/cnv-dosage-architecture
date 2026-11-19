@@ -1,0 +1,469 @@
+trait,col,term,z,P,all_held,q,lab,box,level,axis
+Height,L_all,mirror_tot,6.14161862169743,8.16847904019149e-10,TRUE,1.26611425122968e-07,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_all,mirror_tw,3.72471799509948,0.000499750124937531,TRUE,0.00221317912472335,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_all,tw_DEL,-3.62301544097017,0.00149925037481259,TRUE,0.00505434782608696,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_all,tw_DUP,3.18034124793805,0.000999500249875062,FALSE,0.00368863187453892,**,FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_all,mirror_res,4.18160268176609,2.89461473679819e-05,TRUE,0.000299110189469146,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_all,hit_DEL,1.14698990462403,0.243878060969515,FALSE,0.37426831138886,"",FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+Height,L_all,hit_DUP,-3.35949149703391,0.00349825087456272,TRUE,0.0102307336897589,**,TRUE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+Height,L_all,con_DEL,-1.05569680858138,0.28335832083958,FALSE,0.422312882020528,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+Height,L_all,con_DUP,-0.236753456796182,0.793103448275862,FALSE,0.910600255427842,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+Height,L_all,nall_DEL,-0.0585229313085669,0.953332097252385,FALSE,0.99172130922228,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+Height,L_all,nall_DUP,0.587246605882049,0.557038095461057,FALSE,0.719507539970532,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+Height,L_noUD,mirror_tot,5.01170488639938,5.39498993174819e-07,TRUE,1.06603664412844e-05,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noUD,mirror_tw,2.41001347343418,0.0184907546226887,FALSE,0.046984704369127,**,FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noUD,tw_DEL,-3.84177642890254,0.00149925037481259,TRUE,0.00505434782608696,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noUD,tw_DUP,0.548382125393656,0.589205397301349,FALSE,0.738524836929252,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noUD,mirror_res,4.5864845078318,4.50771834949669e-06,TRUE,6.35178494701806e-05,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noUD,hit_DEL,1.19141387503841,0.226386806596702,FALSE,0.35444399012615,"",FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+Height,L_noUD,hit_DUP,,,FALSE,,–,FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+Height,L_noUD,con_DEL,-1.26262087166211,0.201899050474763,FALSE,0.33291864705945,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+Height,L_noUD,con_DUP,-0.00273451243965252,0.997501249375312,FALSE,0.997501249375312,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+Height,L_noUD,nall_DEL,0.185770309360622,0.852624888904874,FALSE,0.948347571428572,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+Height,L_noUD,nall_DUP,0.466989856478616,0.64050713532714,FALSE,0.781721306895328,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+Height,L_noU,mirror_tot,5.0079205152363,5.50212461485648e-07,TRUE,1.06603664412844e-05,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noU,mirror_tw,2.6771826011429,0.0129935032483758,FALSE,0.0335665500583042,**,FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noU,tw_DEL,-3.77131020339697,0.00449775112443778,FALSE,0.0126754804415974,**,FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noU,tw_DUP,1.25166437999462,0.19640179910045,FALSE,0.330894335440976,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noU,mirror_res,4.31389447595534,1.60403531905424e-05,TRUE,0.000177589624609577,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noU,hit_DEL,,,FALSE,,–,FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+Height,L_noU,hit_DUP,,,FALSE,,–,FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+Height,L_noU,con_DEL,-0.678029855022125,0.488255872063968,FALSE,0.65241086353375,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+Height,L_noU,con_DUP,-0.32265272368533,0.732133933033483,FALSE,0.859156416618276,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+Height,L_noU,nall_DEL,0.496776830581171,0.619346435661564,FALSE,0.761894424821765,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+Height,L_noU,nall_DUP,0.319444358240613,0.749389578357461,FALSE,0.866831228697062,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+Height,L_noA,mirror_tot,5.51789257560368,3.43089038041208e-08,TRUE,1.46059516811283e-06,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noA,mirror_tw,3.22110160104442,0.0065,FALSE,0.0179910714285714,**,FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noA,tw_DEL,-4.17496054527204,0.0015,FALSE,0.00505434782608696,**,FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noA,tw_DUP,1.99279743072275,0.0475,FALSE,0.1150390625,*,FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noA,mirror_res,3.41519410185944,0.000637365749432318,TRUE,0.00259978134636866,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+Height,L_noA,hit_DEL,1.5227778696623,0.1085,FALSE,0.214733860759494,"",FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+Height,L_noA,hit_DUP,-0.413112247658643,0.661,FALSE,0.8004296875,"",FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+Height,L_noA,con_DEL,-0.361213910097773,0.6935,FALSE,0.820553435114504,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+Height,L_noA,con_DUP,-0.883019601662918,0.3565,FALSE,0.506949541284404,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+Height,L_noA,nall_DEL,-0.16889809246753,0.865876799633787,FALSE,0.951850382576149,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+Height,L_noA,nall_DUP,1.48779038852936,0.136806181211336,FALSE,0.25548142274406,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+Height,G_all,mirror_tot,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+Height,G_all,mirror_tw,2.19258,0.0274863,FALSE,0.06871575,*,FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_all,tw_DEL,-1.72189,0.097951,FALSE,0.197174090909091,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_all,tw_DUP,1.81035,0.0784608,FALSE,0.171287661971831,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_all,mirror_res,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+Height,G_all,hit_DEL,-1.67029,0.095952,FALSE,0.195691578947368,"",FALSE,"UK Biobank
+(genome-wide)","Single
+hit"
+Height,G_all,hit_DUP,-1.1293,0.248876,FALSE,0.378193921568627,"",FALSE,"UK Biobank
+(genome-wide)","Single
+hit"
+Height,G_all,con_DEL,-2.57628,0.00749625,FALSE,0.0203845394736842,**,FALSE,"UK Biobank
+(genome-wide)",Constraint
+Height,G_all,con_DUP,-3.8246,0.00049975,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+Height,G_all,nall_DEL,-4.54598,5.46802288182793e-06,TRUE,6.51956574371792e-05,**,TRUE,"UK Biobank
+(genome-wide)","Mean
+shift"
+Height,G_all,nall_DUP,1.58495,0.1129776949542,FALSE,0.218894283973762,"",FALSE,"UK Biobank
+(genome-wide)","Mean
+shift"
+Height,G_noUD,mirror_tot,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noUD,mirror_tw,1.26468,0.1994,FALSE,0.332333333333333,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noUD,tw_DEL,-1.56335,0.116942,FALSE,0.223777901234568,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noUD,tw_DUP,0.110694,0.927536,FALSE,0.978014149659864,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noUD,mirror_res,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noUD,hit_DEL,,,,,"",,"UK Biobank
+(genome-wide)","Single
+hit"
+Height,G_noUD,hit_DUP,,,,,"",,"UK Biobank
+(genome-wide)","Single
+hit"
+Height,G_noUD,con_DEL,-2.74961,0.009995,TRUE,0.0262580508474576,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+Height,G_noUD,con_DUP,-3.33476,0.00049975,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+Height,G_noUD,nall_DEL,-4.86999,1.11603896597085e-06,TRUE,1.9220671080609e-05,**,TRUE,"UK Biobank
+(genome-wide)","Mean
+shift"
+Height,G_noUD,nall_DUP,1.45994,0.144306564638774,FALSE,0.260087413011744,"",FALSE,"UK Biobank
+(genome-wide)","Mean
+shift"
+Height,G_noU,mirror_tot,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noU,mirror_tw,0.0664633,0.968016,FALSE,0.99365880794702,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noU,tw_DEL,-0.0203451,0.982509,FALSE,0.997501249375312,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noU,tw_DUP,0.0917023,0.918541,FALSE,0.978014149659864,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noU,mirror_res,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noU,hit_DEL,,,,,"",,"UK Biobank
+(genome-wide)","Single
+hit"
+Height,G_noU,hit_DUP,,,,,"",,"UK Biobank
+(genome-wide)","Single
+hit"
+Height,G_noU,con_DEL,-3.7796,0.00249875,TRUE,0.007746125,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+Height,G_noU,con_DUP,-3.47242,0.00049975,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+Height,G_noU,nall_DEL,-4.1071,4.00657796825454e-05,TRUE,0.000388137240674659,**,TRUE,"UK Biobank
+(genome-wide)","Mean
+shift"
+Height,G_noU,nall_DUP,1.4382,0.15037731523415,FALSE,0.267913607601072,"",FALSE,"UK Biobank
+(genome-wide)","Mean
+shift"
+Height,G_noA,mirror_tot,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noA,mirror_tw,2.11975,0.035982,FALSE,0.0885271428571429,*,FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noA,tw_DEL,-1.86347,0.0694653,FALSE,0.153816021428571,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noA,tw_DUP,1.55966,0.109445,FALSE,0.214733860759494,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noA,mirror_res,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noA,hit_DEL,,,,,"",,"UK Biobank
+(genome-wide)","Single
+hit"
+Height,G_noA,hit_DUP,,,,,"",,"UK Biobank
+(genome-wide)","Single
+hit"
+Height,G_noA,con_DEL,-3.00817,0.003998,TRUE,0.0114757407407407,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+Height,G_noA,con_DUP,-3.74624,0.00049975,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+Height,G_noA,nall_DEL,-5.22022,1.78710709206652e-07,TRUE,4.61669332117185e-06,**,TRUE,"UK Biobank
+(genome-wide)","Mean
+shift"
+Height,G_noA,nall_DUP,1.88436,0.05951629657479,FALSE,0.137686954762574,"",FALSE,"UK Biobank
+(genome-wide)","Mean
+shift"
+Height,G_noUDA,mirror_tot,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noUDA,mirror_tw,1.26259,0.204398,FALSE,0.333491473684211,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noUDA,tw_DEL,-1.6195,0.0944528,FALSE,0.195202453333333,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noUDA,tw_DUP,-0.0479081,0.965517,FALSE,0.99365880794702,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noUDA,mirror_res,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+Height,G_noUDA,hit_DEL,,,,,"",,"UK Biobank
+(genome-wide)","Single
+hit"
+Height,G_noUDA,hit_DUP,,,,,"",,"UK Biobank
+(genome-wide)","Single
+hit"
+Height,G_noUDA,con_DEL,-2.85994,0.00849575,TRUE,0.0227041594827586,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+Height,G_noUDA,con_DUP,-3.32648,0.001999,TRUE,0.00632336734693878,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+Height,G_noUDA,nall_DEL,-5.31746,1.05225807031021e-07,TRUE,3.26200001796164e-06,**,TRUE,"UK Biobank
+(genome-wide)","Mean
+shift"
+Height,G_noUDA,nall_DUP,1.70142,0.0888641483566288,FALSE,0.186134364801047,"",FALSE,"UK Biobank
+(genome-wide)","Mean
+shift"
+BMI,L_all,mirror_tot,5.90907432119322,3.44035470300793e-09,TRUE,2.66627489483115e-07,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_all,mirror_tw,-1.46514503425775,0.140429785107446,FALSE,0.256077843431225,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_all,tw_DEL,1.33133169119407,0.186906546726637,FALSE,0.32189460825143,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_all,tw_DUP,-1.47042499644187,0.140429785107446,FALSE,0.256077843431225,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_all,mirror_res,5.50133428439733,3.76927785319441e-08,TRUE,1.46059516811283e-06,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_all,hit_DEL,0.68871186327832,0.484257871064468,FALSE,0.65241086353375,"",FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+BMI,L_all,hit_DUP,-1.21491669093167,0.219890054972514,FALSE,0.347785291027956,"",FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+BMI,L_all,con_DEL,-0.123960813176602,0.898550724637681,FALSE,0.967190016103059,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+BMI,L_all,con_DUP,0.924835067441126,0.353823088455772,FALSE,0.506949541284404,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+BMI,L_all,nall_DEL,-0.203833159987649,0.83848387887635,FALSE,0.941775371201697,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+BMI,L_all,nall_DUP,0.136274542559371,0.891604248215912,FALSE,0.966424185129136,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+BMI,L_noUD,mirror_tot,3.58645525631008,0.00033520354821835,TRUE,0.00221317912472335,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noUD,mirror_tw,-1.3503242970982,0.189663823381836,FALSE,0.323053765100929,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noUD,tw_DEL,1.4058063352775,0.162918540729635,FALSE,0.286958793330607,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noUD,tw_DUP,-0.960380442361697,0.33216256899147,FALSE,0.484396823534805,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noUD,mirror_res,3.43852961423677,0.000584882560463851,TRUE,0.00251824435755269,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noUD,hit_DEL,0.794936540751667,0.407796101949026,FALSE,0.55936633453185,"",FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+BMI,L_noUD,hit_DUP,,,FALSE,,–,FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+BMI,L_noUD,con_DEL,-0.213531563732742,0.826586706646677,FALSE,0.935189339636752,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+BMI,L_noUD,con_DUP,1.3299178327196,0.174912543728136,FALSE,0.304622969414169,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+BMI,L_noUD,nall_DEL,-0.160283729347624,0.872657575266673,FALSE,0.952548761734749,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+BMI,L_noUD,nall_DUP,0.0751823730737833,0.940069608906878,FALSE,0.984532360679501,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+BMI,L_noU,mirror_tot,3.42602752329164,0.00061247831537077,TRUE,0.00256578753736404,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noU,mirror_tw,-0.542085060681591,0.595584545910687,FALSE,0.738524836929252,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noU,tw_DEL,0.336467540610622,0.737211634904714,FALSE,0.859156416618276,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noU,tw_DUP,-0.579537339146632,0.570998494731561,FALSE,0.728897663934426,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noU,mirror_res,3.31666924038776,0.00091097394642361,TRUE,0.00353002404239149,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noU,hit_DEL,,,FALSE,,–,FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+BMI,L_noU,hit_DUP,,,FALSE,,–,FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+BMI,L_noU,con_DEL,0.0911544076193922,0.925537231384308,FALSE,0.978014149659864,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+BMI,L_noU,con_DUP,1.23221713609213,0.213893053473263,FALSE,0.341787868952121,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+BMI,L_noU,nall_DEL,-1.06205136220037,0.288212368679436,FALSE,0.425456353764881,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+BMI,L_noU,nall_DUP,0.681056681299483,0.495835625743661,FALSE,0.656876256327072,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+BMI,L_noA,mirror_tot,3.54142929619644,0.000397965500615638,TRUE,0.00221317912472335,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noA,mirror_tw,-0.470152799118616,0.592369477911647,FALSE,0.738524836929252,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noA,tw_DEL,0.378579446749102,0.678535606820462,FALSE,0.809023223516705,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noA,tw_DUP,-0.528247520082335,0.556224899598394,FALSE,0.719507539970532,"",FALSE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noA,mirror_res,3.27292202500225,0.00106441837484477,TRUE,0.00383685693258,**,TRUE,"Recurrent CNVs
+(34 intervals)",Mirror
+BMI,L_noA,hit_DEL,1.99779044222479,0.0499750124937531,FALSE,0.11917118363895,*,FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+BMI,L_noA,hit_DUP,-1.97529446989093,0.0514742628685657,FALSE,0.120886526433753,"",FALSE,"Recurrent CNVs
+(34 intervals)","Single
+hit"
+BMI,L_noA,con_DEL,0.205878967219675,0.825587206396802,FALSE,0.935189339636752,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+BMI,L_noA,con_DUP,0.742595642416393,0.448275862068966,FALSE,0.609497882637629,"",FALSE,"Recurrent CNVs
+(34 intervals)",Constraint
+BMI,L_noA,nall_DEL,-1.26027111306836,0.20757157698758,FALSE,0.335141608677863,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+BMI,L_noA,nall_DUP,0.856133877543905,0.391923731790111,FALSE,0.542394450245243,"",FALSE,"Recurrent CNVs
+(34 intervals)","Mean
+shift"
+BMI,G_all,mirror_tot,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_all,mirror_tw,-8.06462,0.00049975,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_all,tw_DEL,7.60801,0.001999,TRUE,0.00632336734693878,**,TRUE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_all,tw_DUP,-4.48725,0.00049975,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_all,mirror_res,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_all,hit_DEL,1.71594,0.0834583,FALSE,0.179667173611111,"",FALSE,"UK Biobank
+(genome-wide)","Single
+hit"
+BMI,G_all,hit_DUP,0.00527712,0.995002,FALSE,0.997501249375312,"",FALSE,"UK Biobank
+(genome-wide)","Single
+hit"
+BMI,G_all,con_DEL,,,,,"",,"UK Biobank
+(genome-wide)",Constraint
+BMI,G_all,con_DUP,3.12568,0.00049975,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+BMI,G_all,nall_DEL,4.69263,2.6971503474343e-06,TRUE,4.18058303852317e-05,**,TRUE,"UK Biobank
+(genome-wide)","Mean
+shift"
+BMI,G_all,nall_DUP,-0.890061,0.373433132720444,FALSE,0.526201232469717,"",FALSE,"UK Biobank
+(genome-wide)","Mean
+shift"
+BMI,G_noUD,mirror_tot,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noUD,mirror_tw,-6.3541,0.00049975,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noUD,tw_DEL,7.78462,0.00049975,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noUD,tw_DUP,-0.431104,0.676662,FALSE,0.809023223516705,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noUD,mirror_res,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noUD,hit_DEL,1.72136,0.0884558,FALSE,0.186134364801047,"",FALSE,"UK Biobank
+(genome-wide)","Single
+hit"
+BMI,G_noUD,hit_DUP,,,,,"",,"UK Biobank
+(genome-wide)","Single
+hit"
+BMI,G_noUD,con_DEL,,,,,"",,"UK Biobank
+(genome-wide)",Constraint
+BMI,G_noUD,con_DUP,3.52427,0.00049975,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+BMI,G_noUD,nall_DEL,4.55384,5.26754257489882e-06,TRUE,6.51956574371792e-05,**,TRUE,"UK Biobank
+(genome-wide)","Mean
+shift"
+BMI,G_noUD,nall_DUP,-0.870349,0.384109708550441,FALSE,0.536369412840706,"",FALSE,"UK Biobank
+(genome-wide)","Mean
+shift"
+BMI,G_noU,mirror_tot,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noU,mirror_tw,0.656728,0.529235,FALSE,0.69518156779661,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noU,tw_DEL,-1.53968,0.125437,FALSE,0.237106524390244,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noU,tw_DUP,-0.564007,0.573713,FALSE,0.728897663934426,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noU,mirror_res,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noU,hit_DEL,,,,,"",,"UK Biobank
+(genome-wide)","Single
+hit"
+BMI,G_noU,hit_DUP,,,,,"",,"UK Biobank
+(genome-wide)","Single
+hit"
+BMI,G_noU,con_DEL,,,,,"",,"UK Biobank
+(genome-wide)",Constraint
+BMI,G_noU,con_DUP,3.54826,0.00049975,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+BMI,G_noU,nall_DEL,3.37427,0.000740117355965908,TRUE,0.00294149205576194,**,TRUE,"UK Biobank
+(genome-wide)","Mean
+shift"
+BMI,G_noU,nall_DUP,-0.965309,0.334390065278866,FALSE,0.484396823534805,"",FALSE,"UK Biobank
+(genome-wide)","Mean
+shift"
+BMI,G_noA,mirror_tot,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noA,mirror_tw,-7.53673,0.00049975,FALSE,0.00221317912472335,**,FALSE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noA,tw_DEL,7.22656,0.001999,FALSE,0.00632336734693878,**,FALSE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noA,tw_DUP,-3.76804,0.0009995,FALSE,0.00368863187453892,**,FALSE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noA,mirror_res,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noA,hit_DEL,1.84081,0.0674663,FALSE,0.153783477941176,"",FALSE,"UK Biobank
+(genome-wide)","Single
+hit"
+BMI,G_noA,hit_DUP,-0.177008,0.856572,FALSE,0.948347571428572,"",FALSE,"UK Biobank
+(genome-wide)","Single
+hit"
+BMI,G_noA,con_DEL,,,,,"",,"UK Biobank
+(genome-wide)",Constraint
+BMI,G_noA,con_DUP,3.13645,0.00049975,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+BMI,G_noA,nall_DEL,3.65865,0.000253547325748043,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)","Mean
+shift"
+BMI,G_noA,nall_DUP,-1.18241,0.237043057229724,FALSE,0.367416738706073,"",FALSE,"UK Biobank
+(genome-wide)","Mean
+shift"
+BMI,G_noUDA,mirror_tot,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noUDA,mirror_tw,-5.65731,0.0029985,FALSE,0.00893783653846154,**,FALSE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noUDA,tw_DEL,7.45848,0.0029985,FALSE,0.00893783653846154,**,FALSE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noUDA,tw_DUP,-0.00414195,0.993003,FALSE,0.997501249375312,"",FALSE,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noUDA,mirror_res,,,,,"",,"UK Biobank
+(genome-wide)",Mirror
+BMI,G_noUDA,hit_DEL,1.84531,0.0684658,FALSE,0.153799985507246,"",FALSE,"UK Biobank
+(genome-wide)","Single
+hit"
+BMI,G_noUDA,hit_DUP,,,,,"",,"UK Biobank
+(genome-wide)","Single
+hit"
+BMI,G_noUDA,con_DEL,,,,,"",,"UK Biobank
+(genome-wide)",Constraint
+BMI,G_noUDA,con_DUP,3.44791,0.00049975,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)",Constraint
+BMI,G_noUDA,nall_DEL,3.52136,0.000429339309583689,TRUE,0.00221317912472335,**,TRUE,"UK Biobank
+(genome-wide)","Mean
+shift"
+BMI,G_noUDA,nall_DUP,-1.14444,0.252441207522019,FALSE,0.37988725403799,"",FALSE,"UK Biobank
+(genome-wide)","Mean
+shift"

@@ -8,3 +8,8 @@ preQC_*/
 scratch/
 *.RData
 cog_panels*
+
+# public TWAS inputs, not redistributed (size): Mancuso et al. 2017 twas30/, PsychENCODE raw
+concordance/twas30/
+concordance/psychencode_twas/raw/
+concordance/psychencode_twas/*_PECfull_twas.tsv

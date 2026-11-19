@@ -1,0 +1,7 @@
+trait,set,genes_absz_gt3,frac_positive,median_sign_agreement,frac_agreement_ge_0.8,median_tissue_models
+Height,genome-wide,2071,0.484789956542733,1,0.948334138097538,4
+Height,in the CNV loci,27,0.37037037037037,1,0.962962962962963,6
+Height,all genes with a TWAS model,7975,0.488777429467085,1,0.786583072100314,2
+BMI,genome-wide,940,0.488297872340426,1,0.987234042553191,8
+BMI,in the CNV loci,34,0.470588235294118,1,1,5.5
+BMI,all genes with a TWAS model,7978,0.491852594635247,1,0.794810729506142,2

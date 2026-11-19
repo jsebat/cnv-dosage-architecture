@@ -1,0 +1,5 @@
+trait,cls,n_cnv,median_genes,spearman_rho_genes_vs_z,p_asymptotic,n_outside_null_95,n_below_null_95
+Height,mirror,13,4.0,0.35408868871160937,0.23522957425596186,0,0
+Height,asymmetric,10,7.0,-0.3841534829910357,0.27308116951247957,0,0
+BMI,mirror,13,4.0,0.3319581456671338,0.2678219660418238,0,0
+BMI,asymmetric,9,6.0,-0.5042194840896107,0.1663127256715028,0,0
