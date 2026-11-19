@@ -262,7 +262,9 @@ for axx, t, col, title, terms in [
     forest(axx, rows, title)
     axx.legend(handles=[Line2D([], [], marker='o', ls='', color=col, ms=4.5, label='all CNVs'), Line2D([], [], marker='o', ls='', mfc='white', mec=col, ms=4.5, label='all CNVs, not held'),
                         Line2D([], [], marker='^', ls='', color=col, ms=4.5, label='minor recurrent units removed\n(8 drivers kept)'),
-                        Line2D([], [], marker='x', ls='', color=col, ms=5, label='34 recurrent intervals removed')], frameon=False, fontsize=6.0, loc='lower left' if t == 'height' else 'lower right', handletextpad=.2)
+                        Line2D([], [], marker='x', ls='', color=col, ms=5, label='34 recurrent intervals removed')], frameon=False, fontsize=6.0, handletextpad=.2,
+               # Jon 2026-11-17: the keys sat on the genes, DEL points (F lower left, G lower right); put them under the x axis
+               loc='upper center', bbox_to_anchor=(.5, -.16), ncol=2, columnspacing=.8)
 
 
 # ------------------------------------------------------------------ schematic (final solution)
