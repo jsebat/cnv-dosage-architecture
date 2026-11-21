@@ -1,0 +1,31 @@
+{
+  "_comment": "Copy, edit the file paths and column names, then: Rscript main_effects.R --config my_config.json . Keys starting with _ are ignored. Remove a trait's column name (or set it to null) if the cohort does not have it.",
+  "cohort_label": "MyCohort",
+  "genotype_file": "/path/to/genomatrix.recurrentCNV.2026-11-20.csv",
+  "phenotype_file": "/path/to/phenotypes.tsv",
+  "out_dir": "main_effects_out",
+  "geno": { "id": "identifier", "loci": null, "include_oneway": false },
+  "pheno": {
+    "id": "id",
+    "sex": "sex",
+    "male": ["male", "M", "1"],
+    "female": ["female", "F", "2"],
+    "age": "age",
+    "age_unit": "years",
+    "height_cm": "height_cm",
+    "weight_kg": "weight_kg",
+    "bmi": null,
+    "hc_cm": "hc_cm",
+    "pcs": "auto",
+    "site": null,
+    "cohort": null
+  },
+  "min_carriers": 5,
+  "min_controls": 20,
+  "min_adult_ref": 50,
+  "visit_rule": "latest",
+  "adult_boxcox": "fixed_ukbb",
+  "adjust_age_sex": true,
+  "reference_based": true,
+  "complementary": "mask_count"
+}

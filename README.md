@@ -16,6 +16,7 @@ Molly Sacks's repository, https://github.com/mollysacks/Sacks2026.
 |---|---|---|
 | `fig1_main_effects/` | dose-response panels of recurrent CNV effects on height and BMI | Fig. 1 |
 | `recurrentCNVgenotyping/` | recurrent-CNV genotyping tutorial | Fig. 1 |
+| `main_effects/` | federated recurrent-CNV main effects on height, BMI and head circumference, all ages and < 18 y vs >= 18 y (run per cohort, aggregates only), meta-analysis, Fig. 1 style plots | Fig. 1 |
 | `fig3_mirror_asymmetric/` | mirror line, perpendicular offset and its bimodality, mirror/continuous/single-hit model comparisons, extended two-component model grid | Figs. 2-3, Supplementary Note 5 |
 | `concordance/` | common-variant TWAS concordance of CNV dosage effects (circular genomic permutation), exome-gene concordance | Fig. 2, Supplementary Note 4 |
 | `fig4_pathway_analysis/` | pathway convergence of asymmetric CNVs and single-gene height associations | Fig. 4 |
