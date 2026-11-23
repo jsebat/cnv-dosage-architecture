@@ -134,21 +134,23 @@ def main():
                     # gene-based association (Jon 2026-11-23): trait ~ covariates + carrier indicator per gene and dosage, standard CNV -> gene
                     # rules, every stratum; all counts stay in results_dir, the small-cell rule is applied by the genes_export step
                     Gn = C["genes"]; Gr = C["grid"]
+                    fd = os.path.join(root, "all" if C.get("strata") else "", "fig3", "cnv_filter")
+                    if C.get("fig3") and not os.path.exists(os.path.join(fd, "run_info.json")):      # per-position frequency of the dataset
+                        run(["run_fig3.py", "--config", os.path.abspath(a.config), "--steps", "filter", "--stratum", "all"])
+                    pfq = ["--pos_freq", os.path.join(fd, "position_freq.tsv.gz")] if os.path.exists(os.path.join(fd, "position_freq.tsv.gz")) else []
                     run(["gene_assoc_qt.py", "--pheno", pheno, "--trait", T["column"], "--cnv", cnv, "--twas", T["twas"],
                          "--panels", Gn.get("panels", "gtex_nonbrain"), "--exons", Gr["exons"], "--gene_cov", Gr["gene_cov"],
                          "--numeric", num, "--factors", fac, "--cohort", str(C.get("cohort", "cohort")), "--stratum", sname,
-                         "--out", f"{out}/gene_assoc/{t}"] + (["--segdup_bed", Gn["segdups"]] if Gn.get("segdups") else []), threads=cpu)
-                    # the same test on the calls that pass the Fig. 3 rare-CNV filter (frequency defined in the whole dataset, stratum 'all'),
-                    # with the dataset's per-position frequency recorded per gene; the unfiltered table above is Jon's "Don't filter now"
-                    if C.get("fig3") and Gn.get("rare", True):
-                        fd = os.path.join(root, "all" if C.get("strata") else "", "fig3", "cnv_filter")
-                        if not os.path.exists(os.path.join(fd, "run_info.json")):
-                            run(["run_fig3.py", "--config", os.path.abspath(a.config), "--steps", "filter", "--stratum", "all"])
+                         "--cnv_filter", "PGC freeze filters (the cohort's CNV table)",
+                         "--out", f"{out}/gene_assoc/{t}"] + pfq + (["--segdup_bed", Gn["segdups"]] if Gn.get("segdups") else []), threads=cpu)
+                    # optional variant, OFF by default (config genes.rare = true AND the spec's position_max_freq set): the same test on the
+                    # calls that pass the position-frequency filter -> gene_assoc_rare/. Jon 2026-11-23: the main tables use the PGC filters.
+                    if C.get("fig3") and Gn.get("rare", False):
                         if os.path.exists(os.path.join(fd, "cnv_rare.cnv")):
                             run(["gene_assoc_qt.py", "--pheno", pheno, "--trait", T["column"], "--cnv", os.path.join(fd, "cnv_rare.cnv"),
                                  "--twas", T["twas"], "--panels", Gn.get("panels", "gtex_nonbrain"), "--exons", Gr["exons"], "--gene_cov", Gr["gene_cov"],
                                  "--numeric", num, "--factors", fac, "--cohort", str(C.get("cohort", "cohort")), "--stratum", sname,
-                                 "--pos_freq", os.path.join(fd, "position_freq.tsv.gz"), "--cnv_filter", "rare (Fig. 3 position-frequency filter)",
+                                 "--pos_freq", os.path.join(fd, "position_freq.tsv.gz"), "--cnv_filter", "PGC freeze filters + position-frequency filter",
                                  "--out", f"{out}/gene_assoc_rare/{t}"] + (["--segdup_bed", Gn["segdups"]] if Gn.get("segdups") else []), threads=cpu)
                 if "burden" in steps and C.get("burden"):        # genome-wide signed burden, U-shape and monogenic-hit removal (dup_burden.py)
                     Bd = C["burden"]

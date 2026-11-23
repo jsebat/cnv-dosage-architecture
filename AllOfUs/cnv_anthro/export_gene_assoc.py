@@ -4,7 +4,8 @@
         [--partitions '{"sex": ["female", "male"], "ancestry": ["eur", "afr", ...]}']
 
 Reads <results>/<stratum>/<set>/<trait>/gene_assoc.tsv.gz, writes <export>/<stratum>/<set>/<trait>/gene_assoc.tsv.gz + run_info.json, for
-each table set of --sets: gene_assoc (every call of the cohort's CNV table) and gene_assoc_rare (calls passing the Fig. 3 rare-CNV filter).
+each table set of --sets that exists: gene_assoc (the cohort's CNV table, i.e. the PGC freeze filters) and the optional, off-by-default
+gene_assoc_rare (calls that also pass a position-frequency filter).
 max_pos_n (carrier count behind max_pos_freq) is never exported; max_pos_freq is blanked when that count is 1..min_cell.
 Rule (rows are DROPPED, never written with masked counts):
   floor      a gene x dosage row needs >= --min_carriers carriers (5, the gene-mirror rule) in that stratum;

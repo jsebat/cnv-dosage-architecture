@@ -257,7 +257,7 @@ def main():
     ap.add_argument("--cohort", action="append", required=True, help="LABEL=<export>/<stratum>/fig3 (repeat; the first is the reference)")
     ap.add_argument("--out", required=True); ap.add_argument("--code", default=os.path.normpath(os.path.join(HERE, "..", "cnv_anthro")))
     ap.add_argument("--parts", default="joint,dose_bins,gene_mirror")
-    ap.add_argument("--allow_filter_mismatch", action="store_true", help="meta-analyse cohorts whose rare-CNV filter differs (recorded in meta_info.json)")
+    ap.add_argument("--allow_filter_mismatch", action="store_true", help="meta-analyse cohorts whose position-frequency filter differs (recorded in meta_info.json)")
     a = ap.parse_args(); C = dict(x.split("=", 1) for x in a.cohort); labs = list(C); parts = a.parts.split(",")
     if os.path.exists(a.out):
         raise SystemExit(f"{a.out} exists; choose a new output folder")
@@ -265,9 +265,12 @@ def main():
     E = {l: json.load(open(os.path.join(r, "FIG3_EXPORT_INFO.json"))) for l, r in C.items()}
     if len({e["design_sha1"] for e in E.values()}) != 1 or len({(e["spec"], e.get("spec_sha1")) for e in E.values()}) != 1:
         raise SystemExit(f"cohorts ran different designs or specs: { {l: (e['spec'], e['design_sha1']) for l, e in E.items()} }")
-    flt = {l: json.dumps(e.get("cnv_filter", {"applied": False}), sort_keys=True) for l, e in E.items()}
+    def pf(e):                          # position-frequency filter of a cohort: None = PGC freeze filters only (also exports made before 2026-11-23)
+        c = e.get("cnv_filter") or {}
+        return c.get("position_max_freq", c.get("max_freq") if c.get("applied") else None)
+    flt = {l: json.dumps(dict(rule="PGC freeze filters", position_max_freq=pf(e))) for l, e in E.items()}
     if len(set(flt.values())) != 1:
-        msg = f"cohorts differ in the rare-CNV filter: {flt}"
+        msg = f"cohorts differ in the call filter: {flt}"
         if not a.allow_filter_mismatch:
             raise SystemExit(msg + " (rerun the unfiltered cohort, or pass --allow_filter_mismatch)")
         print("WARNING:", msg, flush=True)

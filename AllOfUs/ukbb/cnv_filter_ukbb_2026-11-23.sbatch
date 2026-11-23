@@ -9,7 +9,7 @@
 #SBATCH -t 00:30:00
 #SBATCH -J cnv_filter_ukbb
 #SBATCH -o /expanse/projects/sebat1/jsebat/sacks2026_aou/fig3_2026-11-23/logs/%x.%j.log
-# Rare-CNV filter for Fig. 3 (Jon 2026-11-23), UK Biobank: per-position carrier frequency of the PGC-freeze call set and the calls / people the
+# OPTIONAL position-frequency filter (not used by Fig. 3: Jon 2026-11-23 chose the PGC freeze filters), UK Biobank: per-position carrier frequency of the PGC-freeze call set and the calls / people the
 # filter removes at 0.1%, 0.5%, 1%, 2% and 5% (cnv_freq_filter.py; a call is dropped when >= half of its length has same-dosage carrier
 # frequency above the threshold). Tabulation only: no model is refitted. MAXF = threshold of the filtered table written (default 0.02).
 # null model: none (deterministic filter). Unique output dir: $B/ukbb_cnv_filter_$SLURM_JOB_ID.

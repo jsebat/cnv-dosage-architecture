@@ -1,4 +1,12 @@
-"""Rare-CNV filter by per-position carrier frequency (Jon 2026-11-23: "The fig 3 dosage architecture analysis would only be comparable if it
+"""Per-position carrier frequency of a CNV call set, and an OPTIONAL call filter on it (off by default).
+
+Jon 2026-11-23, final decision: Fig. 3 uses the PGC freeze filters in every cohort (>= 10 kb; arrays >= 10 probes; calls carried by > 10% of
+samples at >= 50% reciprocal overlap removed), exactly as the UK Biobank table was built: "Your 1% rule will eliminate some of the recurrent
+CNVs like 15q11.2. It's better to adopt the pgc filters not the other way around." So by default this script only RECORDS the per-position
+frequency ("Just record probe level frequency") and tabulates what a position filter would remove; with --max_freq it also writes a filtered
+call table (kept for sensitivity analyses; not used by Fig. 3).
+
+Earlier text of this docstring, the rule of the optional filter (Jon 2026-11-23: "The fig 3 dosage architecture analysis would only be comparable if it
 uses rare CNVs ... we should do a filtering step for the purposes of fig. 3"; "we filter at the probe level").
 
 Per dosage (DEL, DUP separately) and position x of the autosomes:
@@ -52,13 +60,14 @@ def common_fraction(p, n, N, thr, b1, b2):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cnv", required=True); ap.add_argument("--pheno", required=True, help="phenotype table: its IIDs are the dataset (N)")
-    ap.add_argument("--max_freq", type=float, required=True); ap.add_argument("--min_frac", type=float, default=0.5)
-    ap.add_argument("--out_cnv", required=True); ap.add_argument("--out_dir", required=True)
+    ap.add_argument("--max_freq", type=float, default=None, help="optional: also write --out_cnv without the calls that fail this frequency")
+    ap.add_argument("--min_frac", type=float, default=0.5)
+    ap.add_argument("--out_cnv", default=""); ap.add_argument("--out_dir", required=True)
     ap.add_argument("--report", default="0.005,0.01,0.02,0.05", help="other thresholds to tabulate in run_info.json")
     a = ap.parse_args(); os.makedirs(a.out_dir, exist_ok=True)
     ids = pd.read_csv(a.pheno, sep="\t", usecols=["IID"], dtype=str).IID.drop_duplicates(); N = len(ids)
     cnv = read_plink_cnv(a.cnv, keep_iids=ids); cnv = cnv[cnv.CHR <= 22].reset_index(drop=True)
-    ths = sorted({a.max_freq, *[float(x) for x in a.report.split(",") if x]})
+    ths = sorted({*([a.max_freq] if a.max_freq is not None else []), *[float(x) for x in a.report.split(",") if x]})
     frac = {t: np.zeros(len(cnv)) for t in ths}; segs = []
     for (ch, ty), c in cnv.groupby(["CHR", "TYPE"]):
         if ty not in TYPES:
@@ -70,9 +79,12 @@ def main():
         segs.append(pd.DataFrame(dict(CHR=ch, START=p[:-1][k], END=p[1:][k] - 1, TYPE=TYPES[ty], n_carriers=n[:-1][k])))
     S = pd.concat(segs, ignore_index=True); S["freq"] = S.n_carriers / N
     S.to_csv(os.path.join(a.out_dir, "position_freq.tsv.gz"), sep="\t", index=False, float_format="%.6g")
-    drop = frac[a.max_freq] >= a.min_frac
+    drop = (frac[a.max_freq] >= a.min_frac) if a.max_freq is not None else np.zeros(len(cnv), bool)
     out = cnv[~drop]; cols = [c for c in ["FID", "IID", "CHR", "BP1", "BP2", "TYPE", "SCORE", "SITES"] if c in out.columns]
-    out[cols].to_csv(a.out_cnv, sep="\t", index=False)
+    if a.max_freq is not None:
+        if not a.out_cnv:
+            raise SystemExit("--max_freq needs --out_cnv")
+        out[cols].to_csv(a.out_cnv, sep="\t", index=False)
     tname = cnv.TYPE.map(TYPES)
 
     def tab(d):
@@ -83,15 +95,17 @@ def main():
                          people_with_a_dropped_call=int(cnv[m & d].IID.nunique()), calls_per_person_after=round(float(len(kept) / N), 4),
                          kb_dropped_median=float(((cnv[m & d].BP2 - cnv[m & d].BP1 + 1) / 1000).median()) if (m & d).any() else None)
         return r
-    info = dict(N=int(N), max_freq=a.max_freq, min_frac=a.min_frac, rule="call dropped when >= min_frac of its length has same-dosage carrier frequency > max_freq",
+    info = dict(N=int(N), max_freq=a.max_freq, min_frac=a.min_frac,
+                rule=("call dropped when >= min_frac of its length has same-dosage carrier frequency > max_freq" if a.max_freq is not None else
+                      "no call dropped: per-position frequency recorded only (the call table already carries the PGC freeze filters)"),
                 input=os.path.basename(a.cnv), calls_in=int(len(cnv)), calls_out=int(len(out)), by_dosage=tab(drop),
                 max_position_freq={ty: float(S[S.TYPE == ty].freq.max()) for ty in ("DEL", "DUP")},
-                mb_above_max_freq={ty: round(float((S[(S.TYPE == ty) & (S.freq > a.max_freq)].eval("END - START + 1")).sum() / 1e6), 3) for ty in ("DEL", "DUP")},
+                mb_above_1pct={ty: round(float((S[(S.TYPE == ty) & (S.freq > 0.01)].eval("END - START + 1")).sum() / 1e6), 3) for ty in ("DEL", "DUP")},
                 report={str(t): tab(frac[t] >= a.min_frac) for t in ths})
     json.dump(info, open(os.path.join(a.out_dir, "run_info.json"), "w"), indent=1)
-    print(json.dumps({k: info[k] for k in ("N", "max_freq", "calls_in", "calls_out", "by_dosage", "max_position_freq", "mb_above_max_freq")}, indent=1))
+    print(json.dumps({k: info[k] for k in ("N", "max_freq", "calls_in", "calls_out", "by_dosage", "max_position_freq", "mb_above_1pct")}, indent=1))
     for t in ths:
-        print(f"threshold {t:.3%}: " + "; ".join(f"{ty} calls dropped {v['calls_dropped']} of {v['calls']} ({v['people_with_a_dropped_call']} people)" for ty, v in info["report"][str(t)].items()))
+        print(f"a position filter at {t:.3%} would drop: " + "; ".join(f"{ty} calls dropped {v['calls_dropped']} of {v['calls']} ({v['people_with_a_dropped_call']} people)" for ty, v in info["report"][str(t)].items()))
 
 
 if __name__ == "__main__":
