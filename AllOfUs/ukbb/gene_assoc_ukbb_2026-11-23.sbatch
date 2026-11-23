@@ -13,7 +13,7 @@
 # Gene-based CNV association (Jon 2026-11-23: "add a gene based test so Milad can output gene based sum stats"), UK Biobank, through the same
 # entry point Milad uses: run_pipeline.py --steps genes,genes_export. Per gene and dosage: trait ~ covariates + carrier indicator (DEL = any
 # exon overlap >= 1 bp, DUP = full-length transcript inside the call), height and BMI, strata all / EUR / AFR / ASN / MIX / female / male.
-# Then: UKBB export (min_cell 0: rows with >= 5 carriers), a second export under the All of Us rule (min_cell 20, with the cross-stratum
+# Then: UKBB export (min_cell 0; rows with >= 21 carriers, the floor of every cohort, Jon 2026-11-23), a second export under the All of Us rule (min_cell 20, with the cross-stratum
 # rule) to exercise the suppression and its audit, a one-cohort meta, a two-copy meta self-test (code check, not a result), and a check of the
 # gene z against a direct per-gene regression for 20 genes.
 # null model: none (analytic OLS). Unique output dir: $B/gene_assoc_ukbb_$SLURM_JOB_ID (code snapshot inside).

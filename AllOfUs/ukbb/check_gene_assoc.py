@@ -24,23 +24,23 @@ U, ex, tx = load_genes(C["grid"]["exons"]); M = len(U); gi = dict(zip(U.entrez.a
 worst = 0.0
 for dos, typ, feats, mode in (("DEL", 1, ex, "overlap"), ("DUP", 3, tx, "within")):
     G = incidence(cnv[cnv.TYPE == typ], feats, mode, N, M).tocsc()
-    d = R[(R.dosage == dos) & (R.n_carriers >= 5)].sort_values("n_carriers"); pick = d.iloc[np.linspace(0, len(d) - 1, 20).astype(int)]
+    d = R[(R.dosage == dos) & (R.n_carriers >= 21)].sort_values("n_carriers"); pick = d.iloc[np.linspace(0, len(d) - 1, 20).astype(int)]
     for r in pick.itertuples():
         x = np.asarray(G[:, gi[r.entrez]].todense()).ravel(); X = np.column_stack([Zc, x])
         b, res, rk, _ = np.linalg.lstsq(X, y, rcond=None); e = y - X @ b; s2 = e @ e / (N - X.shape[1])
         se = np.sqrt(s2 * np.linalg.pinv(X.T @ X)[-1, -1])
         dd = max(abs(b[-1] - r.beta) / max(abs(r.beta), 1e-6), abs(se - r.SE) / r.SE, abs(int(x.sum()) - r.n_carriers)); worst = max(worst, dd)
 print(f"1. direct regression vs table, 40 genes: worst relative difference (beta, SE) or carrier-count difference = {worst:.2e}"); bad += worst > 1e-4
-print(f"   table: N {N}, rows {len(R)} (DEL {(R.dosage == 'DEL').sum()}, DUP {(R.dosage == 'DUP').sum()}); rows with >= 5 carriers {(R.n_carriers >= 5).sum()}, >= 21 {(R.n_carriers >= 21).sum()}")
+print(f"   table: N {N}, rows {len(R)} (DEL {(R.dosage == 'DEL').sum()}, DUP {(R.dosage == 'DUP').sum()}); rows with >= 21 carriers (exported) {(R.n_carriers >= 21).sum()}; with 5-20 (in-cohort only) {R.n_carriers.between(5, 20).sum()}")
 for dos in ("DEL", "DUP"):
     d = R[(R.dosage == dos) & (R.n_carriers >= 21)]; lam = np.median(d.t ** 2) / 0.4549364
-    print(f"   {dos}: genes with >= 21 carriers {len(d)}; lambda (median t^2) {lam:.2f}; P < 2.5e-6: {(d.P < 2.5e-6).sum()}; top: " + ", ".join(f"{s} ({t:+.1f})" for s, t in zip(d.sort_values('P').symbol.head(6), d.sort_values('P').t.head(6))))
+    print(f"   {a.trait} {dos}: genes with >= 21 carriers {len(d)}; lambda (median t^2) {lam:.2f}; P < 2.5e-6: {(d.P < 2.5e-6).sum()}; top: " + ", ".join(f"{s} ({t:+.1f})" for s, t in zip(d.sort_values('P').symbol.head(6), d.sort_values('P').t.head(6))))
 if a.meta_one:
-    m = pd.read_csv(os.path.join(a.meta_one, a.trait, "gene_assoc_meta.tsv.gz"), sep="\t", dtype={"entrez": str}).merge(R[R.n_carriers >= 5], on=["entrez", "dosage"], suffixes=("_m", ""))
+    m = pd.read_csv(os.path.join(a.meta_one, a.trait, "gene_assoc_meta.tsv.gz"), sep="\t", dtype={"entrez": str}).merge(R[R.n_carriers >= 21], on=["entrez", "dosage"], suffixes=("_m", ""))
     w = float(np.nanmax(np.abs(m.beta_m - m.beta) / np.maximum(np.abs(m.beta), 1e-6))); print(f"2. one-cohort meta vs table: rows {len(m)}, worst relative beta difference {w:.2e}"); bad += w > 1e-4
 if a.meta_two:
     m = pd.read_csv(os.path.join(a.meta_two, a.trait, "gene_assoc_meta.tsv.gz"), sep="\t", dtype={"entrez": str}); two = m[m.k_cohorts == 2]
     rb = (two.beta / two.beta_UKBB); rs = (two.SE / two.SE_UKBB)
-    print(f"3. two-copy self-test: rows {len(m)}, in both copies {len(two)} (the min_cell-20 copy drops genes with < 21 carriers); beta ratio {rb.min():.4f}-{rb.max():.4f} (expect 1), SE ratio {rs.min():.4f}-{rs.max():.4f} (expect 0.7071)")
+    print(f"3. two-copy self-test: rows {len(m)}, in both copies {len(two)} (both copies need >= 21 carriers); beta ratio {rb.min():.4f}-{rb.max():.4f} (expect 1), SE ratio {rs.min():.4f}-{rs.max():.4f} (expect 0.7071)")
     bad += abs(rs.median() - 0.7071) > 1e-3
 print("OK" if not bad else "FAILED"); sys.exit(1 if bad else 0)

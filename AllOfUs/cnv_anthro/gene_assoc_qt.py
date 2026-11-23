@@ -14,7 +14,8 @@ TWAS z of --twas (scaled tissue combination of --panels), fraction of exonic bas
 --pos_freq (position_freq.tsv.gz of cnv_freq_filter.py) max_pos_freq = the highest same-dosage per-position carrier frequency of the whole
 dataset inside the gene's exon span (Jon: "Just record probe level frequency"); max_pos_n is its carrier count (dropped at export).
 Rows: every gene with >= --min_carriers carriers of that dosage (default 1: all counts stay inside the cohort so that the exporter can apply the
-small-cell rule across strata; export_gene_assoc.py then keeps genes with >= 5 carriers, the gene-mirror rule, and above the small-cell limit).
+small-cell rule across strata, and so that a supplement at a lower floor can still be made from the full table; export_gene_assoc.py keeps
+genes with >= 21 carriers, the floor of every cohort (Jon 2026-11-23), and above the small-cell limit).
 null model: none (analytic OLS; a single-gene test has no gene annotation to shift).
 Output (aggregate): gene_assoc.tsv.gz, run_info.json. The small-cell rule is applied at export (export_gene_assoc.py), not here.
   python gene_assoc_qt.py --pheno ... --trait height_rint --cnv ... --twas ... --exons ... --gene_cov ... [--segdup_bed ...] --out DIR

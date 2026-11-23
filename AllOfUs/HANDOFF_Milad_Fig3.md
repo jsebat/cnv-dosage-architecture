@@ -234,7 +234,8 @@ launch(['genes_export'], tag='', ds='wgs')
 
 Small-cell rule of this export (rows are dropped, never written with masked counts):
 
-- a gene and dosage is exported for a stratum only with 21 or more carriers there;
+- a gene and dosage is exported for a stratum only with 21 or more carriers there. This is also the threshold of the analysis itself, in
+  every cohort: UK Biobank uses 21 too (Jon 2026-11-23), so the cohorts' gene lists are comparable in the meta-analysis;
 - if a gene has 1–20 carriers in any ancestry stratum, or among people without an ancestry call, its row is dropped from every ancestry
   stratum (the same for female / male), so no small count can be recovered by subtraction. The `all` stratum follows the first rule only.
   This leaves few genes in the ancestry strata (in a UK Biobank trial of the rule, 857 of 5,648 in the European stratum): that is expected.
@@ -292,7 +293,7 @@ instead. Do not change the rule yourself: UK Biobank used `assign_loci`.
   and recomputes the correlation and its null. The univariate z are combined like the joint-model terms; the dose-response bins by
   inverse-variance weighting, bin by bin.
 - Gene-based tables: UK Biobank export
-  `/expanse/projects/sebat1/jsebat/sacks2026_aou/fig3_2026-11-23/gene_assoc_ukbb_55995809/ukbb_gene_assoc_export.tar.gz` (4.9 MB, all strata); meta-analysis `AllOfUs/meta/meta_gene_assoc.py` (inverse variance per gene and
+  `/expanse/projects/sebat1/jsebat/sacks2026_aou/fig3_2026-11-23/gene_export_ukbb_floor21_55996960/ukbb_gene_assoc_export.tar.gz` (1.5 MB, all strata, genes with 21 or more carriers); meta-analysis `AllOfUs/meta/meta_gene_assoc.py` (inverse variance per gene and
   dosage; UK Biobank + All of Us arrays, WGS separately).
 - Figures: `GW2_FIG3_META=<meta folder> python AllOfUs/figures/figs_dosage_story.py D` (Fig. 3) and `... B` (dose-response curves of every
   stratum, one figure per trait).
@@ -304,8 +305,9 @@ instead. Do not change the rule yourself: UK Biobank used `assign_loci`.
 
 1. **Call set: decided.** PGC freeze filters in every cohort, no rarer cut (Jon 2026-11-23). An optional position-frequency filter exists
    in the code but is off; do not switch it on.
-2. **Gene inclusion in the gene mirror and in the gene-based tables.** UK Biobank uses genes with ≥ 5 carriers per dosage. Under the 1–20
-   rule an All of Us gene needs ≥ 21 carriers to be exported. Jon decides whether UK Biobank should use the same limit.
+2. **Gene inclusion in the gene mirror.** UK Biobank uses genes with ≥ 5 deletion and ≥ 5 duplication carriers. Under the 1–20 rule an All
+   of Us gene needs ≥ 21 carriers to contribute. Jon decides whether UK Biobank should use the same limit. (For the gene-based tables
+   this is decided: 21 carriers in every cohort.)
 3. **Dose-response bins on WGS.** The bins use people with deletions only, duplications only, or neither. On WGS that may leave few
    people. If so, Jon decides whether these plots use the array dataset alone.
 4. **Which All of Us dataset enters the main meta-analysis** (arrays, as for the other figures, with WGS reported separately) is unchanged

@@ -400,5 +400,5 @@
   "workers": 1
  },
  "fig3": {"spec": "designs/fig3_spec_2026-11-23.json", "perms_file": "../resources/shared_shifts/{trait}_gtex_nonbrain_all.npy", "strata": ["all"], "jobs": 4, "note": "Fig. 3 joint model (2026-11-23), run_fig3.py: one spec for every cohort; shifts = the UKBB shift list of the CNV trait (sha1 checked). Export goes to <export_dir>_fig3."},
- "genes": {"panels": "gtex_nonbrain", "segdups": "../resources/segDups.bed", "min_carriers": 5, "note": "Gene-based association (2026-11-23), gene_assoc_qt.py: trait ~ covariates + carrier indicator per gene and dosage, every stratum (run_pipeline.py --steps genes); genes_export writes <export_dir>_genes with the small-cell rule (rows with fewer than max(min_carriers, min_cell + 1) carriers dropped)."}
+ "genes": {"panels": "gtex_nonbrain", "segdups": "../resources/segDups.bed", "min_carriers": 21, "note": "Gene-based association (2026-11-23), gene_assoc_qt.py: trait ~ covariates + carrier indicator per gene and dosage, every stratum (run_pipeline.py --steps genes); genes_export writes <export_dir>_genes; a gene x dosage row needs at least 21 carriers in every cohort, UK Biobank included (Jon 2026-11-23: 'ok 21'), and the small-cell rule applies on top (rows with fewer than max(min_carriers, min_cell + 1) carriers dropped). The in-cohort tables keep every gene with at least 1 carrier."}
 }

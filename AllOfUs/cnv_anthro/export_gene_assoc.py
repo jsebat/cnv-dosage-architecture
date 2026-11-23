@@ -1,6 +1,6 @@
 """Aggregate-only export of the gene-based association tables (gene_assoc_qt.py), with the small-cell rule of export_aggregate.py.
 
-  python export_gene_assoc.py --results <results_dir> --export <new dir> --strata all,eur,afr,... --min_cell 20 [--min_carriers 5]
+  python export_gene_assoc.py --results <results_dir> --export <new dir> --strata all,eur,afr,... --min_cell 20 [--min_carriers 21]
         [--partitions '{"sex": ["female", "male"], "ancestry": ["eur", "afr", ...]}']
 
 Reads <results>/<stratum>/<set>/<trait>/gene_assoc.tsv.gz, writes <export>/<stratum>/<set>/<trait>/gene_assoc.tsv.gz + run_info.json, for
@@ -8,7 +8,8 @@ each table set of --sets that exists: gene_assoc (the cohort's CNV table, i.e. t
 gene_assoc_rare (calls that also pass a position-frequency filter).
 max_pos_n (carrier count behind max_pos_freq) is never exported; max_pos_freq is blanked when that count is 1..min_cell.
 Rule (rows are DROPPED, never written with masked counts):
-  floor      a gene x dosage row needs >= --min_carriers carriers (5, the gene-mirror rule) in that stratum;
+  floor      a gene x dosage row needs >= --min_carriers carriers in that stratum: 21 in every cohort, UK Biobank and All of Us alike
+             (Jon 2026-11-23: "ok 21"), for the main results and the meta-analysis;
   primary    rows with 1..min_cell carriers are dropped (All of Us: min_cell 20, so >= 21 carriers);
   secondary  for each partition of the parent stratum 'all' (sex; ancestry): if for a gene x dosage any child stratum, or the remainder
              (all - sum of the children, e.g. people without an ancestry call), has 1..min_cell carriers, that row is dropped from EVERY child
@@ -29,7 +30,7 @@ KEY = ["entrez", "dosage"]
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--results", required=True); ap.add_argument("--export", required=True); ap.add_argument("--strata", default="all")
-    ap.add_argument("--min_cell", type=int, default=20); ap.add_argument("--min_carriers", type=int, default=5)
+    ap.add_argument("--min_cell", type=int, default=20); ap.add_argument("--min_carriers", type=int, default=21)
     ap.add_argument("--sets", default="gene_assoc,gene_assoc_rare")
     ap.add_argument("--partitions", default='{"sex": ["female", "male"], "ancestry": ["eur", "afr", "amr", "eas", "sas", "mid"]}')
     a = ap.parse_args(); k = a.min_cell; need = max(a.min_carriers, k + 1)
