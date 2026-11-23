@@ -206,5 +206,6 @@
   "gene_cov": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/gene_covariates.tsv",
   "clingen": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/conga/ClinGen_gene_curation_list_GRCh38.tsv",
   "asym_loci": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/growth_loci/asymmetric_molly13.tsv"
- }
+ },
+ "fig3": {"spec": "designs/fig3_spec_2026-11-23.json", "perms_file": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/shared_shifts/{trait}_shifts.npy", "strata": ["all"], "jobs": 4, "note": "Fig. 3 joint model (2026-11-23), run_fig3.py: one spec for every cohort; shifts = the UKBB shift list of the CNV trait (sha1 checked). Export goes to <export_dir>_fig3."}
 }

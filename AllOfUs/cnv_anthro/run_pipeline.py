@@ -251,6 +251,13 @@ def main():
             # only; the other strata still run, and the pipeline exits non-zero at the end listing the failed strata
             failed.append(sname); print(f"== stratum {sname} FAILED ({' '.join(map(str, e.cmd[1:3]))}): rest of this stratum skipped", flush=True)
 
+    # Fig. 3 joint model of the dosage paper (2026-11-23): its own driver, run_fig3.py (config section "fig3"). Steps: fig3 = fits + in-cohort
+    # summaries; fig3_export = aggregate-only, meta-ready export to <export_dir>_fig3 (never part of the 'export' step).
+    if C.get("fig3") and ("fig3" in steps or "fig3_export" in steps):
+        for sname in [s for s in C["fig3"].get("strata", ["all"]) if s in strata]:
+            st3 = [x for x, on in (("fit", "fig3" in steps), ("summary", "fig3" in steps), ("export", "fig3_export" in steps)) if on]
+            run(["run_fig3.py", "--config", os.path.abspath(a.config), "--steps", ",".join(st3), "--stratum", sname]
+                + (["--jobs", str(a.jobs)] if a.jobs else []))
     if failed:
         raise SystemExit(f"failed strata (rerun them with --strata {','.join(failed)}): {failed}; export not run")
     if "export" in steps:

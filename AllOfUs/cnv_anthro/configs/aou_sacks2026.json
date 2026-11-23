@@ -389,5 +389,6 @@
   "loci": "../resources/conga/omar_loci_all.tsv",
   "loo_runs": "../resources/conga/loo2_runs.tsv",
   "workers": 1
- }
+ },
+ "fig3": {"spec": "designs/fig3_spec_2026-11-23.json", "perms_file": "../resources/shared_shifts/{trait}_gtex_nonbrain_all.npy", "strata": ["all"], "jobs": 4, "note": "Fig. 3 joint model (2026-11-23), run_fig3.py: one spec for every cohort; shifts = the UKBB shift list of the CNV trait (sha1 checked). Export goes to <export_dir>_fig3."}
 }

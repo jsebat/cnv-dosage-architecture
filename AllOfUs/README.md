@@ -12,6 +12,13 @@ The folder also holds the code that meta-analyses the two cohorts and redraws th
 
 **Start here:** [`HANDOFF_Milad.md`](HANDOFF_Milad.md).
 
+**Fig. 3 joint model of the dosage paper (added 2026-11-23):** [`HANDOFF_Milad_Fig3.md`](HANDOFF_Milad_Fig3.md).
+- `cnv_anthro/run_fig3.py`: fits, in-cohort summaries and the meta-ready export, from one spec for every cohort
+  (`designs/fig3_spec_2026-11-23.json`, `designs/fig3_joint_2026-11-23.json`); also reachable as `run_pipeline.py --steps fig3,fig3_export`.
+- `ukbb/assemble_ukbb_fig3.py`, `ukbb/fig3_ukbb_export_meta_2026-11-23.sbatch`: the UK Biobank export from the finished runs.
+- `meta/meta_fig3.py`, `ukbb/meta_fig3_expanse.sbatch`: the meta-analysis at UCSD; `meta/compare_fig3_tables.py` checks two table sets.
+- `figures/figs_dosage_story.py D` with `GW2_FIG3_META=<meta folder>` redraws Fig. 3 from the meta-analysis.
+
 | folder | what it holds | where it runs |
 |---|---|---|
 | `cnv_anthro/` | **The pipeline**, the same code for both cohorts:<br>• single entry point `run_pipeline.py`, with one config per cohort<br>• `configs/aou_sacks2026.json`: the All of Us run<br>• `configs/ukbb_as_aou_sacks2026_test.json`: the plumbing test on Expanse<br>• `designs/`: the term sets of the univariate grid and the joint models<br>• `workbench/`: the notebook and the dsub launcher | AoU Workbench, Expanse |

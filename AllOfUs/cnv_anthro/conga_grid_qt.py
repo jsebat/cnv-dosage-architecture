@@ -107,6 +107,35 @@ def measure(name, Z, shet, q95, hi):
         return ((sh >= 0.0033) & (sh < 0.0296)).astype(float)
     if name == "sh_high":               # top tertile
         return (sh >= 0.0296).astype(float)
+    if name.startswith("cls:"):
+        # TWAS x constraint gene classes (Jon 2026-11-22, dosage paper Figs 2-3; same definitions as class_dose_bins.py):
+        #   cls:<twas>:<constraint>, twas = up (scaled z > 3) | down (z < -3) | sig (up - down) | abs (|z| > 3) | other (the rest, incl. no z) | all
+        #   constraint = LC (s_het <= 0.029 or missing) | HC (s_het > 0.029) | all
+        _, tw, con = name.split(":"); z = np.nan_to_num(Z["scaled"], nan=0.0)
+        up = (z > 3).astype(float); dn = (z < -3).astype(float)
+        has = np.isfinite(Z["scaled"]).astype(float)   # weak = has a TWAS z, -3 <= z <= 3; none = no TWAS z (Jon 2026-11-22, size3 run)
+        w = {"up": up, "down": dn, "sig": up - dn, "abs": up + dn, "other": 1 - up - dn, "weak": has * (1 - up - dn), "none": 1 - has,
+             "all": np.ones(len(z))}[tw]
+        return w * {"LC": (~hc).astype(float), "HC": hc.astype(float), "all": 1.0}[con]
+    if name.startswith("zb") and ":" in name:
+        # TWAS z band within one constraint stratum (Jon 2026-11-22, Shanta Fig. 3D for height / BMI in LC and HC genes): zb<k>:LC | zb<k>:HC
+        b, con = name.split(":")
+        return measure(b, Z, shet, q95, hi) * ((~hc) if con == "LC" else hc).astype(float)
+    if name.startswith("zb") and name[2:].isdigit():
+        # TWAS z band k = 1..7 (Jon 2026-11-22, dosage paper Fig. 2; ConGA conga_joint.R --design zband, Engchuan et al.): scaled z in
+        # (-inf,-3], (-3,-2], (-2,-1], (-1,1), [1,2), [2,3), [3,inf); genes without a TWAS z are in no band
+        z = Z["scaled"]; ok = np.isfinite(z); zz = np.where(ok, z, 0.0)
+        bd = np.where(zz <= -3, 1, np.where(zz < -2, 2, np.where(zz < -1, 3, np.where(zz < 1, 4, np.where(zz < 2, 5, np.where(zz < 3, 6, 7))))))
+        return (ok & (bd == int(name[2:]))).astype(float)
+    if name.startswith("sb") and name[2:].isdigit():
+        # s_het band k = 1..7 (ConGA --design shetband): genes with a non-imputed GeneBayes s_het; less-constrained genes (<= 0.029) split
+        # at their tertiles (bands 1-3), highly constrained genes (> 0.029) at their quartiles (bands 4-7); cuts over the gene circle
+        k = int(name[2:]); ok = np.isfinite(shet); L = ok & (shet <= SHET_CUT); H = ok & (shet > SHET_CUT)
+        qL = np.quantile(shet[L], [1 / 3, 2 / 3]); qH = np.quantile(shet[H], [0.25, 0.5, 0.75])
+        bd = np.zeros(len(shet), int)
+        bd[L] = 1 + (shet[L] > qL[0]) + (shet[L] > qL[1])
+        bd[H] = 4 + (shet[H] > qH[0]) + (shet[H] > qH[1]) + (shet[H] > qH[2])
+        return (bd == k).astype(float)
     p = name.split(":")
     assert p[0] == "g" and len(p) == 5, name
     _, genes, form, sign, tissue = p
@@ -149,6 +178,7 @@ class RunData:
         for d in ("DEL", "DUP"):
             a, b = self.cols(d, var[d], Wfun); F += a; QF += b
         F = np.column_stack(F); QF = np.column_stack(QF)
+        self.nnz = (F != 0).sum(0)      # people with a non-zero value of each term (small-cell rule at export; same in every null replicate's run)
         A = F.T @ F - QF.T @ QF; Fy = F.T @ self.yr
         p = len(Fy); t = np.full(p, np.nan); bb = t.copy(); se = t.copy()
         keep = np.diag(A) > 1e-8
@@ -322,7 +352,8 @@ def main():
             ll = -0.5 * RD.N * (np.log(2 * np.pi * rss / RD.N) + 1)          # Gaussian ML log-likelihood of the OLS fit
             for j, nm in enumerate(readout_names(v)):
                 rows.append(dict(run=rname, variant=v["name"], readout=nm, beta=b[j] if j < len(b) else np.nan,
-                                 se=se[j] if j < len(se) else np.nan, t=ro[j], rss=rss, npar=npar, loglik=ll, AIC=2 * (npar + 1) - 2 * ll))
+                                 se=se[j] if j < len(se) else np.nan, t=ro[j], rss=rss, npar=npar, loglik=ll, AIC=2 * (npar + 1) - 2 * ll,
+                                 n_carriers_term=int(RD.nnz[j]) if j < len(b) else np.nan))   # observed fit only (2026-11-23, Fig. 3 export)
         return rows
 
     obs, nul = [], {}
