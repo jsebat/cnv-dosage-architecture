@@ -1,0 +1,15 @@
+Group (in Figure 2A)	CHR	START	END	Locus name	Disorder Name	Locus type	URL for Clinical Reference
+Genome-wide significant loci	1	147056425	147922330	1q21.1	1q21.1 recurrent region (distal)	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-37421
+Genome-wide significant loci	3	196011534	197617305	3q29	3q29 recurrent region (includes DLG1)	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-37443
+Genome-wide significant loci	7	73331712	74715504	7q11.23_WBS	7q11.23 recurrent (Williams-Beuren syndrome) region (includes ELN)		https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-37392
+Other Clinically-Reportable CNVs	2	96076661	97011779	2q11.2	2q11.2 deletion (LMAN2L, ARID5A)	Recurrent CNV	https://www.sciencedirect.com/science/article/pii/S2949774425011495#:~:text=2%20are%20approximately%20%E2%88%BC1.0,2%20rCNVs.
+Other Clinically-Reportable CNVs	2	110105139	110226371	2q13_NPHP1	2q13 deletion (NPHP1)	Recurrent CNV	https://rarechromo.org/media/information/Chromosome%20%202/2q13%20microdeletions%20FTNW.pdf
+Other Clinically-Reportable CNVs	2	110636463	111255072	2q13	2q13 deletion (NPHP1)	Recurrent CNV	https://rarechromo.org/media/information/Chromosome%20%202/2q13%20microdeletions%20FTNW.pdf
+Other Clinically-Reportable CNVs	2	130723735	131173104	2q21.1	2q21.1 deletion	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-46288
+Other Clinically-Reportable CNVs	7	75508972	76435095	7q11.23_distal	WBS distal deletion	Recurrent CNV	https://pmc.ncbi.nlm.nih.gov/articles/PMC3865388/
+Other Clinically-Reportable CNVs	10	48182156	49850750	10q11.21_11.23	10q11.21-11.23	Recurrent CNV	https://pmc.ncbi.nlm.nih.gov/articles/PMC3655525/
+Other Clinically-Reportable CNVs	10	80285716	87171894	10q22-23	10q23 deletion (NRG3, GRID1)	separate the genes?	https://pmc.ncbi.nlm.nih.gov/articles/PMC1852738/
+Other Clinically-Reportable CNVs	13	22981219	24310484	13q12.12	13q12.12 deletion	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-46298
+Other Clinically-Reportable CNVs	17	14238070	15523647	17p12	HNPP (PMP22)	Recurrent CNV	
+Other Clinically-Reportable CNVs	17	16909457	20307704	17p11.2	17p11.2 recurrent (SMS/PLS) region (includes RAI1)	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-37418
+Other Clinically-Reportable CNVs	17	36460090	37857812	17q12	17q12 duplication	Recurrent CNV	https://www.ncbi.nlm.nih.gov/books/NBK344340/
