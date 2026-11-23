@@ -6,12 +6,13 @@ rerun or changed. The earlier handoff (`HANDOFF_Milad.md`) still holds for every
 
 ## In short
 
-1. Pin commit `ed0c509` of `jsebat/cnv-dosage-architecture` (branch `main`) in your notebook and rerun sections 1, 2, 4 and 6.
+1. Pin commit `f6c0b34` of `jsebat/cnv-dosage-architecture` (branch `main`) in your notebook and rerun sections 1, 2, 4 and 6.
 2. Add the two stages in section A below and launch `fig3` on the WGS dataset (8 joint-model fits, 6 univariate fits, 2 gene-mirror runs
    and 2 binned dose-response runs; several hours).
 3. Run the QC cell (section B) and paste its output to Jon. It prints only z statistics, P values and sample sizes.
 4. Launch `fig3_export`, check that the log ends with `AUDIT OK`, package the folder and copy the tarball to Expanse (section C).
 5. Repeat 2 to 4 on the array dataset when its main run is done (section D).
+6. Run the gene-based association on both datasets and send its export too (section E; added later on 2026-11-23, about an hour).
 
 Do not change the specification (`cnv_anthro/designs/fig3_spec_2026-11-23.json`). UK Biobank ran exactly this file, and the meta-analysis
 stops if the two cohorts differ.
@@ -31,6 +32,18 @@ duplications (DUP).
 | dose-response bins | all CNVs; single-gene; ≥ 2-gene | **univariate**: per class, the trait in fixed bins of the number of genes deleted or duplicated | height, BMI |
 
 TWAS is GTEx non-brain (32 panels), scaled z = sum of z / √(number of panels). Covariates are the ones in your config for each trait.
+
+**Rare-CNV filter** (Jon 2026-11-23: the dosage architecture is only comparable across cohorts on rare CNVs). Every Fig. 3 fit now
+runs on the calls that pass a frequency filter computed in your own dataset, separately for deletions and duplications:
+
+- for every position, the carrier frequency = people with a call of that dosage covering it, divided by everyone in the phenotype table
+  (at a breakpoint this is the probe frequency of the CNV GWAS);
+- a call is dropped when at least half of its length lies where that frequency is above 1%.
+
+The `fig3` stage does this first, by itself, and writes `results/all/fig3/cnv_filter/` (`cnv_rare.cnv`, which is participant-level and stays in
+the Workbench; `position_freq.tsv.gz`; `run_info.json`). In UK Biobank the filter removes 16% of deletion calls and 22% of duplication
+calls and none of the calls at the 34 recurrent intervals. **If you already ran `fig3` at commit `ed0c509`, those fits are unfiltered:**
+the stage stops and tells you to move `results/all/fig3` away (for example to `fig3_unfiltered`); do that and launch it again.
 
 **Univariate tests and dose-response plots** (Jon 2026-11-23). These come before the joint model: each gene class is tested on its own
 (covariates only, no other class terms) in each CNV-size stratum. Two outputs per class and stratum:
@@ -59,15 +72,16 @@ Biobank used for Fig. 3, so the two cohorts match. If you genotyped recurrent CN
 
 ## A. Run (WGS dataset)
 
-In section 1 set `PIN_COMMIT = 'ed0c509'`, then rerun sections 1, 2, 4 and 6. Section 6 rebuilds the filled config from the template,
+In section 1 set `PIN_COMMIT = 'f6c0b34'`, then rerun sections 1, 2, 4 and 6. Section 6 rebuilds the filled config from the template,
 which now has a `"fig3"` block; nothing else in the template changed. Check what changed in the code first:
 
 ```
-cd ~/repos/cnv-growth-bmi && git diff --stat 4b64136 ed0c509 -- AllOfUs/cnv_anthro
+cd ~/repos/cnv-growth-bmi && git diff --stat 4b64136 f6c0b34 -- AllOfUs/cnv_anthro
 ```
 
 Scripts your finished stages used are unchanged except `conga_grid_qt.py` (new gene classes and one extra output column;
-old designs give the same numbers) and `run_pipeline.py` (two new steps).
+old designs give the same numbers) and `run_pipeline.py` (new steps `fig3`, `fig3_export`, `genes`, `genes_export`, and an optional second
+burden version). The array template now carries Jon's 2026-11-20 settings that your section 14 already sets, so nothing changes there.
 
 Add this to the `STAGES` dict in section 7 (and to each dataset's `stages` list if you want them in `status()`), rerun that cell, then launch:
 
@@ -92,6 +106,9 @@ launch(['fig3'], tag='', ds='wgs')
 ```python
 import numpy as np
 DS = 'wgs'; F3 = f"{DATASETS[DS]['run']}/results/all/fig3"
+fi = json.load(open(f'{F3}/cnv_filter/run_info.json'))        # rare-CNV filter: calls before / after, per dosage (counts 1-20 masked)
+print('filter: N', fi['N'], '| max_freq', fi['max_freq'], '| calls', fi['calls_in'], '->', fi['calls_out'], '| highest position frequency', fi['max_position_freq'])
+print(json.dumps(mask(fi['by_dosage'])))
 spec = json.load(open(f'{CODE}/designs/fig3_spec_2026-11-23.json'))
 for f in sorted(glob.glob(f'{F3}/*/grid/*/*/run_info.json')):
     i = json.load(open(f)); t = i['trait'].replace('_rint', '')
@@ -125,7 +142,7 @@ for t in ['height', 'bmi']:      # dose-response bins: already masked when writt
 participant count, so the 1–20 rule does not apply to them; your section 9.1 audit would flag them by name, which is why the Fig. 3 export
 has its own audit.
 
-Things to look at: `single-dosage or non-carriers` is the sample the dose-response bins use. On WGS, where most people carry gene-hitting
+Things to look at: the filter line (how many calls it removed; on WGS expect a large share). `single-dosage or non-carriers` is the sample the dose-response bins use. On WGS, where most people carry gene-hitting
 deletions and duplications, it may be a small part of N: report the number to Jon (open point 3). Every line says `shifts OK`; N equals your joint-run N for the trait; the number of withheld cells is small. If many
 single-gene terms are withheld, tell Jon before exporting.
 
@@ -138,8 +155,8 @@ launch(['fig3_export'], tag='', ds='wgs')
 When it is done, `~/cnv_anthro_run/logs/fig3_export.log` must end with `AUDIT OK`. The export is in `~/cnv_anthro_run/export_aggregate_fig3/`
 (about 50 MB in UK Biobank). It holds, per fit, `observed_terms.tsv` (beta, SE and t of every term in every run), `null_runs.npz` (the t
 of every term in each of the 2,000 shift replicates of every run), `run_info.json`; per trait `gene_z.npz` (per-gene score z) and the dose-response
-bin tables (`fig3_dose_bins.tsv`, `fig3_dose_shape.tsv`: beta, SE, carriers and mean genes per bin); the design,
-the spec and `EXPORT_MANIFEST.txt`. No summary table is exported: the meta-analysis recomputes them.
+bin tables (`fig3_dose_bins.tsv`, `fig3_dose_shape.tsv`: beta, SE, carriers and mean genes per bin); the filter record (`cnv_filter/run_info.json` and the position frequencies above the
+small-cell limit); the design, the spec and `EXPORT_MANIFEST.txt`. No summary table is exported: the meta-analysis recomputes them.
 
 Small-cell rule, applied by the export step with your `MIN_CELL`:
 
@@ -178,10 +195,99 @@ launch(['fig3_export'], tag='ar', ds='array')
 
 Same QC, export and packaging with `DS = 'array'`.
 
+## E. Gene-based association (Jon 2026-11-23)
+
+Gene-level summary statistics for height and BMI in every stratum of your run (all, the ancestry strata, female, male). Per gene and
+dosage, one linear model: trait ~ covariates + carrier, where carrier is a 0/1 indicator (not a count):
+
+- deletion carrier: a deletion overlaps any exon of the gene by at least 1 bp;
+- duplication carrier: a duplication contains a full-length transcript of the gene.
+
+These are the standard CNV-to-gene rules of the pipeline. Two table sets are written: `gene_assoc` uses every call in your CNV table (no
+frequency filter), and `gene_assoc_rare` uses the calls that pass the Fig. 3 rare-CNV filter and adds `max_pos_freq`, the highest
+per-position carrier frequency of that dosage inside the gene. Run `fig3` first, or let this stage make the filter itself. The table has
+beta (trait SD per carrier), SE, t, P, N, carriers, carrier frequency, and per gene chr, start, end, s_het, TWAS z and the fraction of its
+exons in segmental duplications. The test is analytic (OLS); it is not the gene-mirror z, which is adjusted for gene-count burden.
+
+Add to `STAGES` in section 7, rerun that cell, then launch (WGS first, then `tag='ar', ds='array'`):
+
+```python
+STAGES['genes']        = '--steps genes'                        # every stratum, both traits
+STAGES['genes_export'] = '--steps genes_export --strata all'    # aggregate-only export -> <run>/export_aggregate_genes
+launch(['genes'], tag='', ds='wgs')
+```
+
+Output: `<run>/results/<stratum>/gene_assoc/<trait>/gene_assoc.tsv.gz`. These files hold every gene with at least one carrier, so they
+contain counts of 1–20: do not paste or download them. QC (safe to paste: N, numbers of genes and test statistics only):
+
+```python
+DS = 'wgs'; R = f"{DATASETS[DS]['run']}/results"
+for f in sorted(glob.glob(f'{R}/*/gene_assoc*/*/gene_assoc.tsv.gz')):
+    d = pd.read_csv(f, sep='\t'); st, t = f.split('/')[-4] + ' ' + f.split('/')[-3], f.split('/')[-2]; d = d[d.n_carriers >= 21]
+    for dos in ['DEL', 'DUP']:
+        x = d[d.dosage == dos]
+        print(st, t, dos, '| N', int(x.N.iloc[0]) if len(x) else 0, '| genes with >= 21 carriers', len(x),
+              '| lambda', round(float((x.t ** 2).median() / 0.4549), 2) if len(x) else None, '| genes with P < 2.5e-6:', int((x.P < 2.5e-6).sum()))
+```
+
+Then export, and check that `logs/genes_export.log` ends with `AUDIT OK`:
+
+```python
+launch(['genes_export'], tag='', ds='wgs')
+```
+
+Small-cell rule of this export (rows are dropped, never written with masked counts):
+
+- a gene and dosage is exported for a stratum only with 21 or more carriers there;
+- if a gene has 1–20 carriers in any ancestry stratum, or among people without an ancestry call, its row is dropped from every ancestry
+  stratum (the same for female / male), so no small count can be recovered by subtraction. The `all` stratum follows the first rule only.
+  This leaves few genes in the ancestry strata (in a UK Biobank trial of the rule, 857 of 5,648 in the European stratum): that is expected.
+- `max_pos_freq` is blank when the count behind it is 1–20.
+
+Package and send as before:
+
+```python
+DRUN = DATASETS[DS]['run']; T = f"{DATASETS[DS]['tar']}_genes_export_{time.strftime('%Y%m%d')}.tar.gz"
+sh(f"tail -2 {DRUN}/logs/genes_export.log; head -3 {DRUN}/export_aggregate_genes/EXPORT_MANIFEST.txt")
+sh(f'cd {DRUN} && tar czf {T} export_aggregate_genes && sha256sum {T} > {T}.sha256 && ls -la {T}* && gsutil cp {T} {T}.sha256 {BUCKET_GS}/')
+```
+
+Files to send: `aou_sacks2026_genes_export_<date>.tar.gz` and `aou_array_sacks2026_genes_export_<date>.tar.gz`, each with its `.sha256`.
+The nosegdup dataset does not need this run (same CNV and phenotype tables as WGS).
+
+## F. Locus carriers at 1q21.1 and 22q11.21: one check for Jon
+
+The locus-removal runs of Fig. 3 assign a call to a locus at ≥ 50% reciprocal overlap (`assign_loci`). Your notes say WGS calls at 1q21.1
+distal are larger than the locus, and array calls at 22q11.21 are fragmented, so some carriers may not be assigned and would stay in the
+"locus removed" runs. This cell counts them (people; counts 1–20 masked; safe to paste). Run it for `wgs` and for `array`:
+
+```python
+sys.path.insert(0, CODE)
+from common import read_plink_cnv
+from conga_axes_qt import assign_loci
+DS = 'wgs'; cfg = json.load(open(f"{DATASETS[DS]['run']}/logs/config_used.json")); X = lambda v: os.path.expandvars(v)
+ids = pd.read_csv(X(cfg['pheno_table']), sep='\t', usecols=['IID'], dtype=str).IID
+c = read_plink_cnv(X(cfg['cnv_table']), keep_iids=ids); c = c[c.CHR <= 22].reset_index(drop=True)
+loci = pd.read_csv(f'{CODE}/../resources/growth_loci/loci_sacks34.tsv', sep='\t'); c['locus'] = assign_loci(c, loci)
+for name, ch, a, b, fam in [('1q21.1 distal', 1, 147056425, 147922330, ['1q21_1']),
+                            ('22q11.21 A-D', 22, 19049819, 21112437, ['22q11_21_A_D', '22q11_21_A_B', '22q11_21_B_D', '22q11_21_B_C', '22q11_21_C_D'])]:
+    for typ, tn in [(1, 'DEL'), (3, 'DUP')]:
+        d = c[(c.CHR == ch) & (c.TYPE == typ) & (c.BP2 > a) & (c.BP1 < b)].copy()
+        d['cov'] = (d.BP2.clip(upper=b) - d.BP1.clip(lower=a)) / (b - a)
+        assigned = set(d[d.locus.isin(fam)].IID); cover50 = set(d[d['cov'] >= .5].IID); any10 = set(d[d['cov'] >= .1].IID)
+        print(name, tn, '| assigned by the 50% reciprocal rule:', mask(len(assigned)), '| one call covers >= 50% of the locus:', mask(len(cover50)),
+              '| of those not assigned:', mask(len(cover50 - assigned)), '| any call covering >= 10%, not assigned:', mask(len(any10 - assigned)))
+```
+
+Send Jon the eight lines. He decides whether the All of Us locus-removal runs should use your port's rules (reciprocal plus one-way)
+instead. Do not change the rule yourself: UK Biobank used `assign_loci`.
+
 ## What happens at UCSD (for information)
 
 - UK Biobank export (done): `/expanse/projects/sebat1/jsebat/sacks2026_aou/fig3_2026-11-23/ukbb_export_55986701/ukbb_fig3_export.tar.gz`
-  (51 MB; sha256 `fd9a29a3f51eb193442baadadbf28a572bd2d1b6d65425fb87b0d08f8c44be66`). It stays at UCSD.
+  (51 MB; sha256 `fd9a29a3f51eb193442baadadbf28a572bd2d1b6d65425fb87b0d08f8c44be66`). It stays at UCSD. It was made before the
+  rare-CNV filter, so it is unfiltered: UK Biobank is refitted with the filter once Jon approves, and the meta-analysis refuses to combine
+  a filtered with an unfiltered cohort.
 - Tests on Expanse: a meta-analysis of the UK Biobank export alone reproduces the UK Biobank tables and the current figure, pixel for pixel.
   The code you will run (`run_pipeline.py --steps fig3,fig3_export`) was also refitted from scratch on UK Biobank data (1 h 52 min on
   16 cores for the joint fits and gene mirror) and gave the same tables as the finished runs. The univariate fits and bins took 1 h more.
@@ -190,17 +296,22 @@ Same QC, export and packaging with `DS = 'array'`.
   contrasts, the 9 locus-removal runs and `no_loci` are then recomputed from the meta t. The gene mirror combines the per-gene z the same way
   and recomputes the correlation and its null. The univariate z are combined like the joint-model terms; the dose-response bins by
   inverse-variance weighting, bin by bin.
+- Gene-based tables: UK Biobank export
+  `/expanse/projects/sebat1/jsebat/sacks2026_aou/fig3_2026-11-23/gene_assoc_ukbb_55990607/ukbb_gene_assoc_export.tar.gz` (9.5 MB, both table sets, all strata); meta-analysis `AllOfUs/meta/meta_gene_assoc.py` (inverse variance per gene and
+  dosage; UK Biobank + All of Us arrays, WGS separately).
 - Figures: `GW2_FIG3_META=<meta folder> python AllOfUs/figures/figs_dosage_story.py D` (Fig. 3) and `... B` (dose-response curves of every
   stratum, one figure per trait).
 
 ## Open points (Jon decides)
 
-1. **Call set on WGS.** The Fig. 3 fits use every call in your CNV table, as your grid and joint runs did. On WGS (median 57 calls per
-   person) the total-genes term is then dominated by common calls. A version restricted to rare (< 1%) gene-hitting calls, like the
-   `no_rare_gene` rule of the additivity runs, is not in this handoff. Do not add it unless Jon asks.
-2. **Gene inclusion in the gene mirror.** UK Biobank uses genes with ≥ 5 deletion and ≥ 5 duplication carriers. Under the 1–20 rule an All
-   of Us gene needs ≥ 21 carriers to contribute. Jon decides whether UK Biobank should use the same limit.
+0. **Locus carriers in the locus-removal runs** (section F): keep the 50% reciprocal rule of UK Biobank, or use Milad's port of the recurrent
+   CNV genotyping in All of Us. Pending the counts of section F.
+
+1. **Filter threshold.** The spec uses 1% (the lab's definition of a rare call). The CNV GWAS filters probes at 2%. If Jon changes it,
+   the spec changes and every cohort reruns; do not edit it yourself.
+2. **Gene inclusion in the gene mirror and in the gene-based tables.** UK Biobank uses genes with ≥ 5 carriers per dosage. Under the 1–20
+   rule an All of Us gene needs ≥ 21 carriers to be exported. Jon decides whether UK Biobank should use the same limit.
 3. **Dose-response bins on WGS.** The bins use people with deletions only, duplications only, or neither. On WGS that may leave few
-   people. If so, Jon decides between rare (< 1%) gene-hitting calls only, or the array dataset alone for these plots.
+   people. The rare-CNV filter should help; if the sample is still small, Jon decides whether these plots use the array dataset alone.
 4. **Which All of Us dataset enters the main meta-analysis** (arrays, as for the other figures, with WGS reported separately) is unchanged
    from the first handoff.
