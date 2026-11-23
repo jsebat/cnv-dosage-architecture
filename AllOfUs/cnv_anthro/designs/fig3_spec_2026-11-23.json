@@ -7,6 +7,7 @@
  "loo_mode": "drivers",
  "major_loci": "16p11_2_BP4_BP5,16p11_2_BP1_BP3,22q11_21_A_D,15q11_2_BP1_BP2,1q21_1,16p13_11_BP1_BP2,17q12,17p12",
  "perms_sha1": {"height": "157a247259f02719", "bmi": "be761a32dd575298"},
+ "cnv_filter": {"max_freq": 0.01, "min_frac": 0.5, "note": "rare-CNV filter (Jon 2026-11-23), cnv_freq_filter.py: per-position carrier frequency in the whole dataset, per dosage; a call is dropped when >= min_frac of its length has frequency > max_freq. Applied before every fit of this spec, identically in every cohort."},
  "fits": [
   {"name": "size2t_mirror", "variant": "size2t", "pairs": "all", "note": "per CNV size (single-gene, >=2-gene): total genes + TWAS up/down x LC/HC + other HC; all four CNV-trait x TWAS-trait pairs"},
   {"name": "all2t_mirror", "variant": "all2t", "pairs": "matched", "note": "the same model pooled over CNV size"},

@@ -7,6 +7,11 @@ its "fig3" section: {"spec": ..., "perms_file": "<shared_shifts>/{trait}_....npy
   python run_fig3.py --config configs/<cohort>.json --steps fit,summary,export [--jobs 4] [--stratum all]
 
 Steps
+  filter   rare-CNV filter of the spec ("cnv_filter": max_freq, min_frac; cnv_freq_filter.py, Jon 2026-11-23): per-position carrier frequency
+           in the whole dataset, per dosage; a call is dropped when >= min_frac of its length is above max_freq. Writes
+           <results_dir>/<stratum>/fig3/cnv_filter/{cnv_rare.cnv, position_freq.tsv.gz, run_info.json}. Run automatically by 'fit'; every
+           fit below then reads cnv_rare.cnv. The config can switch it off ("fig3": {"cnv_filter": false}) only for runs made before the
+           filter existed; the export records whether it was applied and the meta-analysis refuses to mix filtered and unfiltered cohorts.
   fit      conga_grid_qt.py for size2t (4 CNV-trait x TWAS-trait pairs), all2t and totdose (matched pairs), and the UNIVARIATE tests of each
            class in each CNV-size stratum (fits uni_N1_inf, uni_N1_1, uni_N2_inf: 7 one-class models each; these come before the joint model,
            Jon 2026-11-23); 2,000 shared shifts, LOO = drivers with the 8 fixed major loci + minor_all + no_loci; gene_mirror_qt.py per trait; fig3_dose_bins.py per trait (binned dose response of
@@ -167,6 +172,8 @@ def audit(root, k):
                 d = pd.read_csv(p, sep="	"); n = pd.to_numeric(d.n, errors="coerce")
                 if n.between(1, k).any() or (d.run.ne("full") & n.notna() & d.side.ne("none")).any():
                     bad.append(f"small or no_loci bin counts in {p}")
+            if f == "position_freq.tsv.gz" and k > 0 and pd.read_csv(p, sep="\t").n_carriers.between(1, k).any():
+                bad.append(f"position counts 1..{k} in {p}")
             if f == "gene_z.npz" and k > 0:
                 z = np.load(p)
                 for a in [a for a in z.files if a.startswith("n__")]:
@@ -197,6 +204,24 @@ def main():
     pf = {t: F["perms_file"].replace("{trait}", t) for t in traits}
     cpu = (len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else os.cpu_count()) or 1
     jobs = a.jobs or F.get("jobs", 4); thr = max(1, cpu // jobs)
+    FL = S.get("cnv_filter") if F.get("cnv_filter", True) else None      # rare-CNV filter of the spec (None: not applied in this run)
+    fdir = os.path.join(root, "cnv_filter"); cnv_use = os.path.join(fdir, "cnv_rare.cnv") if FL else C["cnv_table"]
+    if FL and ("filter" in steps or "fit" in steps):
+        if os.path.exists(os.path.join(fdir, "run_info.json")):
+            print("skip (done):", fdir, flush=True)
+        else:
+            import glob
+            old = glob.glob(os.path.join(root, "*", "grid", "*", "*", "run_info.json")) + glob.glob(os.path.join(root, "gene_mirror", "*", "run_info.json")) \
+                + glob.glob(os.path.join(root, "dose_bins", "*", "run_info.json"))
+            if old:                      # fits made before the filter existed would be skipped as 'done' and mixed with filtered ones
+                raise SystemExit(f"{root} holds {len(old)} fits made WITHOUT the rare-CNV filter. Move that folder away "
+                                 f"(e.g. mv {root} {root}_unfiltered) and rerun: every Fig. 3 fit must use the filtered calls.")
+            os.makedirs(os.path.join(root, "logs"), exist_ok=True)
+            run(["cnv_freq_filter.py", "--cnv", C["cnv_table"], "--pheno", pheno, "--max_freq", str(FL["max_freq"]), "--min_frac", str(FL.get("min_frac", 0.5)),
+                 "--out_cnv", cnv_use + ".tmp", "--out_dir", fdir], os.path.join(root, "logs", "cnv_filter.log"), cpu)
+            os.replace(cnv_use + ".tmp", cnv_use)
+        fi = json.load(open(os.path.join(fdir, "run_info.json")))
+        print(f"rare-CNV filter (max_freq {fi['max_freq']}): calls {fi['calls_in']} -> {fi['calls_out']}", flush=True)
 
     if "fit" in steps:
         for t in traits:                # the cohort must load the UK Biobank shift list of the CNV trait
@@ -210,7 +235,7 @@ def main():
                 T = C["traits"][c]; out = os.path.join(root, f["name"], "grid", f"{c}_x_{t}", dir_of(f))
                 if os.path.exists(os.path.join(out, "run_info.json")):
                     print("skip (done):", out, flush=True); continue
-                calls.append((["conga_grid_qt.py", "--pheno", pheno, "--trait", T["column"], "--cnv", C["cnv_table"], "--twas", C["traits"][t]["twas"],
+                calls.append((["conga_grid_qt.py", "--pheno", pheno, "--trait", T["column"], "--cnv", cnv_use, "--twas", C["traits"][t]["twas"],
                                "--panels", S["panels"], "--exons", G["exons"], "--gene_cov", G["gene_cov"], "--clingen", G["clingen"],
                                "--loci", G["loci"], "--loo_runs", G["loo_runs"], "--design", dfile(f), "--only", ",".join(variants_of(f)),
                                "--nrep", str(S["nrep"]), "--seed", str(S["seed"]), "--loo_mode", S["loo_mode"], "--major_loci", S["major_loci"],
@@ -222,7 +247,7 @@ def main():
                 T = C["traits"][t]; out = os.path.join(root, "gene_mirror", t)
                 if os.path.exists(os.path.join(out, "run_info.json")):
                     print("skip (done):", out, flush=True); continue
-                calls.append((["gene_mirror_qt.py", "--pheno", pheno, "--trait", T["column"], "--cnv", C["cnv_table"], "--twas", T["twas"],
+                calls.append((["gene_mirror_qt.py", "--pheno", pheno, "--trait", T["column"], "--cnv", cnv_use, "--twas", T["twas"],
                                "--panels", S["panels"], "--exons", G["exons"], "--gene_cov", G["gene_cov"], "--loci", G["loci"],
                                "--loo_runs", G["loo_runs"], "--major_loci", S["major_loci"], "--nrep", str(gm["nrep"]), "--seed", str(gm["seed"]),
                                "--numeric", ",".join(T["numeric"]), "--factors", ",".join(T["factors"]), "--out", out],
@@ -233,7 +258,7 @@ def main():
                 T = C["traits"][t]; out = os.path.join(root, "dose_bins", t)
                 if os.path.exists(os.path.join(out, "run_info.json")):
                     print("skip (done):", out, flush=True); continue
-                calls.append((["fig3_dose_bins.py", "--pheno", pheno, "--trait", T["column"], "--cnv", C["cnv_table"], "--twas", T["twas"],
+                calls.append((["fig3_dose_bins.py", "--pheno", pheno, "--trait", T["column"], "--cnv", cnv_use, "--twas", T["twas"],
                                "--panels", S["panels"], "--exons", G["exons"], "--gene_cov", G["gene_cov"], "--loci", G["loci"],
                                "--loo_runs", G["loo_runs"], "--numeric", ",".join(T["numeric"]), "--factors", ",".join(T["factors"]),
                                "--min_cell", str(kb), "--cohort", str(C.get("cohort", "cohort")), "--out", out],
@@ -276,12 +301,19 @@ def main():
                 os.makedirs(os.path.join(E, "dose_bins", t))
                 for fn in ("fig3_dose_bins.tsv", "fig3_dose_shape.tsv", "run_info.json"):
                     shutil.copy(os.path.join(db, fn), os.path.join(E, "dose_bins", t, fn))
+        if FL:                           # filter record: counts scrubbed, position frequencies above the small-cell limit only
+            os.makedirs(os.path.join(E, "cnv_filter"))
+            fi = json.load(open(os.path.join(fdir, "run_info.json")))
+            json.dump(scrub(fi, k) if k > 0 else fi, open(os.path.join(E, "cnv_filter", "run_info.json"), "w"), indent=1)
+            pf = pd.read_csv(os.path.join(fdir, "position_freq.tsv.gz"), sep="\t")
+            pf[pf.n_carriers > k].to_csv(os.path.join(E, "cnv_filter", "position_freq.tsv.gz"), sep="\t", index=False, float_format="%.6g")
         os.makedirs(os.path.join(E, "designs"), exist_ok=True)
         for p in list(DES) + [F["spec"]]:
             shutil.copy(os.path.join(HERE, p), os.path.join(E, "designs", os.path.basename(p)))
         json.dump(dict(cohort=C.get("cohort"), stratum=strat or "all", min_cell=k, spec=os.path.basename(F["spec"]),
+                       cnv_filter=dict(FL, applied=True) if FL else dict(applied=False),
                        design_sha1=hashlib.sha1(b"".join(json.dumps(DES[p_], sort_keys=True).encode() for p_ in DES)).hexdigest()[:16],
-                       spec_sha1=hashlib.sha1(json.dumps({k_: v for k_, v in S.items() if k_ != "note"}, sort_keys=True).encode()).hexdigest()[:16],
+                       spec_sha1=hashlib.sha1(json.dumps({k_: v for k_, v in S.items() if k_ not in ("note", "cnv_filter")}, sort_keys=True).encode()).hexdigest()[:16],
                        traits=traits, fits=[f["name"] for f in fits]), open(os.path.join(E, "FIG3_EXPORT_INFO.json"), "w"), indent=1)
         bad = audit(E, k); tot = 0; lines = []
         for d, _, fs in os.walk(E):

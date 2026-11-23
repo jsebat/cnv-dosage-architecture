@@ -257,6 +257,7 @@ def main():
     ap.add_argument("--cohort", action="append", required=True, help="LABEL=<export>/<stratum>/fig3 (repeat; the first is the reference)")
     ap.add_argument("--out", required=True); ap.add_argument("--code", default=os.path.normpath(os.path.join(HERE, "..", "cnv_anthro")))
     ap.add_argument("--parts", default="joint,dose_bins,gene_mirror")
+    ap.add_argument("--allow_filter_mismatch", action="store_true", help="meta-analyse cohorts whose rare-CNV filter differs (recorded in meta_info.json)")
     a = ap.parse_args(); C = dict(x.split("=", 1) for x in a.cohort); labs = list(C); parts = a.parts.split(",")
     if os.path.exists(a.out):
         raise SystemExit(f"{a.out} exists; choose a new output folder")
@@ -264,6 +265,12 @@ def main():
     E = {l: json.load(open(os.path.join(r, "FIG3_EXPORT_INFO.json"))) for l, r in C.items()}
     if len({e["design_sha1"] for e in E.values()}) != 1 or len({(e["spec"], e.get("spec_sha1")) for e in E.values()}) != 1:
         raise SystemExit(f"cohorts ran different designs or specs: { {l: (e['spec'], e['design_sha1']) for l, e in E.items()} }")
+    flt = {l: json.dumps(e.get("cnv_filter", {"applied": False}), sort_keys=True) for l, e in E.items()}
+    if len(set(flt.values())) != 1:
+        msg = f"cohorts differ in the rare-CNV filter: {flt}"
+        if not a.allow_filter_mismatch:
+            raise SystemExit(msg + " (rerun the unfiltered cohort, or pass --allow_filter_mismatch)")
+        print("WARNING:", msg, flush=True)
     ref = C[labs[0]]; spec = json.load(open(os.path.join(ref, "designs", E[labs[0]]["spec"]))); checks = []
     if "joint" in parts:
         for f in spec["fits"]:
@@ -291,7 +298,7 @@ def main():
     pd.DataFrame(checks).to_csv(os.path.join(a.out, "meta_checks.tsv"), sep="\t", index=False)
     name = {"UKBB": "UK Biobank", "AoU": "All of Us", "AoU_WGS": "All of Us WGS", "AoU_array": "All of Us arrays"}
     json.dump(dict(cohorts=labs, label=" + ".join(name.get(l, l) for l in labs) + (" (meta-analysis)" if len(labs) > 1 else ""),
-                   exports=C, export_info=E, parts=parts), open(os.path.join(a.out, "meta_info.json"), "w"), indent=1)
+                   exports=C, export_info=E, parts=parts, cnv_filter_by_cohort={l: json.loads(v) for l, v in flt.items()}), open(os.path.join(a.out, "meta_info.json"), "w"), indent=1)
     print("wrote", a.out, "| cohorts:", labs)
 
 

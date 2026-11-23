@@ -130,12 +130,38 @@ def main():
                     run(["locus_effects.py", "--pheno", pheno, "--cnv", cnv, "--loci", C["loci"]["file"], "--traits", T["column"],
                          "--numeric", num, "--factors", fac, "--min_carriers", str(C["loci"].get("min_carriers", 2)),
                          "--out", f"{out}/locus_effects/locus_effects_{t}.tsv"])
+                if "genes" in steps and C.get("genes") and sname in C["genes"].get("strata", list(strata)):
+                    # gene-based association (Jon 2026-11-23): trait ~ covariates + carrier indicator per gene and dosage, standard CNV -> gene
+                    # rules, every stratum; all counts stay in results_dir, the small-cell rule is applied by the genes_export step
+                    Gn = C["genes"]; Gr = C["grid"]
+                    run(["gene_assoc_qt.py", "--pheno", pheno, "--trait", T["column"], "--cnv", cnv, "--twas", T["twas"],
+                         "--panels", Gn.get("panels", "gtex_nonbrain"), "--exons", Gr["exons"], "--gene_cov", Gr["gene_cov"],
+                         "--numeric", num, "--factors", fac, "--cohort", str(C.get("cohort", "cohort")), "--stratum", sname,
+                         "--out", f"{out}/gene_assoc/{t}"] + (["--segdup_bed", Gn["segdups"]] if Gn.get("segdups") else []), threads=cpu)
+                    # the same test on the calls that pass the Fig. 3 rare-CNV filter (frequency defined in the whole dataset, stratum 'all'),
+                    # with the dataset's per-position frequency recorded per gene; the unfiltered table above is Jon's "Don't filter now"
+                    if C.get("fig3") and Gn.get("rare", True):
+                        fd = os.path.join(root, "all" if C.get("strata") else "", "fig3", "cnv_filter")
+                        if not os.path.exists(os.path.join(fd, "run_info.json")):
+                            run(["run_fig3.py", "--config", os.path.abspath(a.config), "--steps", "filter", "--stratum", "all"])
+                        if os.path.exists(os.path.join(fd, "cnv_rare.cnv")):
+                            run(["gene_assoc_qt.py", "--pheno", pheno, "--trait", T["column"], "--cnv", os.path.join(fd, "cnv_rare.cnv"),
+                                 "--twas", T["twas"], "--panels", Gn.get("panels", "gtex_nonbrain"), "--exons", Gr["exons"], "--gene_cov", Gr["gene_cov"],
+                                 "--numeric", num, "--factors", fac, "--cohort", str(C.get("cohort", "cohort")), "--stratum", sname,
+                                 "--pos_freq", os.path.join(fd, "position_freq.tsv.gz"), "--cnv_filter", "rare (Fig. 3 position-frequency filter)",
+                                 "--out", f"{out}/gene_assoc_rare/{t}"] + (["--segdup_bed", Gn["segdups"]] if Gn.get("segdups") else []), threads=cpu)
                 if "burden" in steps and C.get("burden"):        # genome-wide signed burden, U-shape and monogenic-hit removal (dup_burden.py)
                     Bd = C["burden"]
                     run(["dup_burden.py", "--pheno", pheno, "--trait", T["column"], "--cnv", cnv, "--exons", Bd["exons"], "--gene_cov", Bd["gene_cov"],
                          "--clingen", Bd["clingen"], "--asym_loci", Bd["asym_loci"], "--numeric", num, "--factors", fac, "--out", f"{out}/burden/{t}",
                          "--min_n", str(Bd.get("min_n", 50)), "--single_def", Bd.get("single_def", "all_calls"),
                          "--rare_freq", str(Bd.get("rare_freq", 0.01))])
+                    for sd_ in Bd.get("extra_single_defs", []):      # further versions of the burden panel, e.g. all_calls -> burden_all_calls/
+                        if sd_ != Bd.get("single_def", "all_calls"):      # (AoU arrays, Jon 2026-11-20; Milad ran it as his own stage)
+                            run(["dup_burden.py", "--pheno", pheno, "--trait", T["column"], "--cnv", cnv, "--exons", Bd["exons"], "--gene_cov", Bd["gene_cov"],
+                                 "--clingen", Bd["clingen"], "--asym_loci", Bd["asym_loci"], "--numeric", num, "--factors", fac,
+                                 "--out", f"{out}/burden_{sd_}/{t}", "--min_n", str(Bd.get("min_n", 50)), "--single_def", sd_,
+                                 "--rare_freq", str(Bd.get("rare_freq", 0.01))])
                 if "axes" in steps:
                     X = C["axes"]
                     for pan in X["panels"]:
@@ -258,6 +284,11 @@ def main():
             st3 = [x for x, on in (("fit", "fig3" in steps), ("summary", "fig3" in steps), ("export", "fig3_export" in steps)) if on]
             run(["run_fig3.py", "--config", os.path.abspath(a.config), "--steps", ",".join(st3), "--stratum", sname]
                 + (["--jobs", str(a.jobs)] if a.jobs else []))
+    if "genes_export" in steps and C.get("genes") and not failed:      # aggregate-only gene tables -> <export_dir>_genes (never part of 'export')
+        run(["export_gene_assoc.py", "--results", root, "--export", C["genes"].get("export_dir", C["export_dir"].rstrip("/") + "_genes"),
+             "--strata", ",".join(C.get("strata", {"all": {}})), "--min_cell", str(C["min_cell"]),
+             "--min_carriers", str(C["genes"].get("min_carriers", 5))]
+            + (["--partitions", json.dumps(C["partitions"])] if C.get("partitions") else []))
     if failed:
         raise SystemExit(f"failed strata (rerun them with --strata {','.join(failed)}): {failed}; export not run")
     if "export" in steps:
