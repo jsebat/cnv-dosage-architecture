@@ -305,9 +305,9 @@ instead. Do not change the rule yourself: UK Biobank used `assign_loci`.
 
 1. **Call set: decided.** PGC freeze filters in every cohort, no rarer cut (Jon 2026-11-23). An optional position-frequency filter exists
    in the code but is off; do not switch it on.
-2. **Gene inclusion in the gene mirror.** UK Biobank uses genes with ≥ 5 deletion and ≥ 5 duplication carriers. Under the 1–20 rule an All
-   of Us gene needs ≥ 21 carriers to contribute. Jon decides whether UK Biobank should use the same limit. (For the gene-based tables
-   this is decided: 21 carriers in every cohort.)
+2. **Carrier thresholds: decided** (Jon 2026-11-23). The 21-carrier rule is for the gene-based association (the gene-level GWAS) only,
+   in every cohort. The gene mirror keeps its own rule: genes with ≥ 5 deletion and ≥ 5 duplication carriers in UK Biobank; in All of Us
+   the 1–20 export rule still means a gene needs ≥ 21 carriers to contribute.
 3. **Dose-response bins on WGS.** The bins use people with deletions only, duplications only, or neither. On WGS that may leave few
    people. If so, Jon decides whether these plots use the array dataset alone.
 4. **Which All of Us dataset enters the main meta-analysis** (arrays, as for the other figures, with WGS reported separately) is unchanged
