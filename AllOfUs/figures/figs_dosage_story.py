@@ -758,11 +758,12 @@ def schematic_dose(ax, trait):
     # grey total-genes arrows removed (Jon 2026-11-23: "Just remove the gray arrows"); the term stays in the model and in panel a
     for st, col in (("LC", "#f28e2b"), ("HC", "#7b3294")):
         component(Q, trait, (st, "HC" if st == "LC" else "LC"), col, "full", [(d_("D4"), u, ("D4", st)), (a_("M4"), m, ("M4", st))],
-                  [[(o_(f"cls:{c}:{st}", dos, flip=(c == "down")), uv, (f"t{c}{dos}", st)) for c in ("up", "down")]
+                  [[(o_(f"cls:{c}:{st}", dos), uv, (f"t{c}{dos}", st)) for c in ("up", "down")]
                    for dos, uv in (("DEL", (1, 0)), ("DUP", (0, 1)))])
     # Jon 2026-11-23 (via ConGA): 'Orange and Purple are ALSO supposed to fall back the same as green' / 'Single tile, like green': if no
     # diagonal passes, a DEL / DUP axis arrow from the TWAS-up tile, or the TWAS-down tile with its sign flipped to the TWAS direction, of that
-    # dosage (the passing one with the larger |z|); no up - down arm
+    # dosage (the passing one with the larger |z|); no up - down arm. Jon 2026-11-23: 'anchor the direction of the arrows to the CNV effects NOT
+    # the twas': no sign flip; an axis arrow points along its tile's own CNV effect (DEL raises the trait -> right; DUP lowers it -> down)
     # Jon 2026-11-23 (hierarchy, same rule in the ConGA disorder figure): diagonal(s) first; only if no diagonal passes, the DEL / DUP arm
     # (up - down of one dosage, CNV-TWAS convergence in one dosage) is drawn on its axis; an arm pointing against its usual direction = divergence
     component(Q, trait, ("HC",), "#1b7837", "arm", [(d_("doseOth"), u, ("doseOth", "HC")), (o_("cls:other:HC", "mirror"), m, ("mirOth", "HC"))],
