@@ -73,7 +73,7 @@
  },
  "gwas": {
   "chroms": "1-23",
-  "min_ncnv": 12,
+  "min_ncnv": 21,
   "freq_max": 0.02,
   "bp_dir": "/expanse/projects/sebat1/oshanta/home/IndividualDisorder/Freeze_2024/inputs/bp_files",
   "known_loci": "/expanse/projects/sebat1/jsebat/ukbb_anthro_cnv/code/resources/omar_alleles/gws_all_cnvs_known_loci.txt",
