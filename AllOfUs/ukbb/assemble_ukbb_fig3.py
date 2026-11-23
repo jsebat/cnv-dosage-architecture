@@ -19,7 +19,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--results", required=True); ap.add_argument("--config", required=True); ap.add_argument("--work", required=True)
     a = ap.parse_args()
-    root = os.path.join(a.work, "results", "all", "fig3"); os.makedirs(root)
+    root = os.path.join(a.work, "results", "all", "fig3"); os.makedirs(root)   # fig3_dose_bins.py is then run into <root>/dose_bins (run_fig3.py --only_fit dose_bins)
     for name, src in RUNS.items():
         s = os.path.join(a.results, src); assert os.path.isdir(s), s
         os.symlink(s, os.path.join(root, name))

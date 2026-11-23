@@ -7,7 +7,9 @@ GW2_FIG3_META=<out> (one cohort alone reproduces that cohort's own tables):
   <out>/size2t_mirror/  grid/<cnv>_x_<twas>/size2t/{observed_terms.tsv, null_runs.npz, grid_summary.tsv, per_run_z.tsv, run_info.json},
                         mirror4_cross_summary.tsv (M4, armDEL, armDUP), dose_summary.tsv (D4, doseOth, doseTot, mirTot)
   <out>/all2t_mirror/   the same for the model pooled over CNV size        <out>/totdose/   total genes hit only
+  <out>/uni_<size>/grid/<trait>_x_<trait>/univariate/grid_summary.tsv      univariate DEL z and DUP z of each class per CNV-size stratum
   <out>/gene_mirror/<trait>/gene_mirror_summary.tsv, gene_z.npz            <out>/meta_info.json, meta_checks.tsv
+  <out>/dose_bins/<trait>/fig3_dose_bins.tsv, fig3_dose_shape.tsv          (binned dose response of every stratum; figs_dosage_story.py B)
 How cohorts are combined
   joint-model terms   per run (full, each major-locus removal, minor_all, no_loci) and term: Z = sum_c w_c t_c / sqrt(sum_c w_c^2), w_c = sqrt(N_c),
                       over the cohorts with a value (a term withheld by a cohort's small-cell rule is left out for that cohort); the same
@@ -17,6 +19,9 @@ How cohorts are combined
   gene mirror         per gene, run, CNV size and dosage: the same sqrt(N)-weighted Stouffer of the per-gene score z, over the cohorts where the
                       gene is usable (carriers >= 5, and above the cohort's small-cell limit); a gene enters r(zDEL, zDUP) when both dosages
                       have a usable cohort. total / residual / explained, LOO and no_loci then as gene_mirror_qt.py.
+  dose-response bins  fixed-effect inverse-variance mean of each bin coefficient and shape term (bins are fixed, so identical in every cohort);
+                      a bin withheld by a cohort's small-cell rule is left out for that cohort; carriers summed over the cohorts that report
+                      them; Cochran Q per bin. Analytic, no shift null (fig3_dose_bins.py).
 Checks (meta_checks.tsv; any failure stops the run): same design and spec, same readouts, same shift list (perms_sha1, nrep) and same major
 loci in every cohort; same gene order and gene-circle shifts for the gene mirror.
 null model: joint terms: genome shift of the gene annotation, the SAME 2,000 UK Biobank shifts in every cohort, so replicate i is one shift
@@ -83,8 +88,9 @@ def grid_summary(trait, panels, vn, names, ot, nul, runs, loo, nrep, majors):
     return pd.DataFrame(out), pd.DataFrame(per)
 
 
-def meta_fit(C, rel, out, vn, checks):
-    """C: {label: fig3 export root}. rel: <fit>/grid/<pair>/<variant>. Writes the meta fit folder in the single-cohort format."""
+def meta_fit(C, rel, out, variants, checks):
+    """C: {label: fig3 export root}. rel: <fit>/grid/<pair>/<folder>; variants: the model variants in that folder. Writes the meta fit folder in
+    the single-cohort format."""
     info, obs, nul = {}, {}, {}
     for lab, root in C.items():
         d = os.path.join(root, rel)
@@ -93,39 +99,42 @@ def meta_fit(C, rel, out, vn, checks):
         obs[lab] = o.drop_duplicates(["run", "readout"]).set_index(["run", "readout"])
         nul[lab] = np.load(os.path.join(d, "null_runs.npz"))
     labs = list(C); i0 = info[labs[0]]
-    names = i0.get("readouts") or list(obs[labs[0]].loc["full"].index)
     same = lambda f: len({json.dumps(f(info[l]), sort_keys=True) for l in labs}) == 1
     ck = dict(fit=rel, cohorts=";".join(labs), same_shifts=same(lambda i: [i.get("perms_sha1"), i.get("nrep")]),
               same_major_loci=same(lambda i: i.get("major_loci")), same_panels=same(lambda i: i.get("panels")),
-              same_readouts=all(list(obs[l].loc["full"].index) == list(obs[labs[0]].loc["full"].index) for l in labs))
+              same_readouts=same(lambda i: i.get("readouts")))
     checks.append(ck)
     if not all(v for k_, v in ck.items() if k_.startswith("same_")):
         raise SystemExit(f"cohorts are not comparable for {rel}: {ck}")
-    w = np.array([np.sqrt(float(info[l]["N"])) for l in labs])
-    runs = [f.split("__", 1)[0] for f in nul[labs[0]].files]
-    runs = [r for r in runs if all(f"{r}__{vn}" in nul[l].files for l in labs)]
-    nrep = min(nul[l][f"full__{vn}"].shape[0] for l in labs)
-    mnul = {r: stouffer(np.stack([np.asarray(nul[l][f"{r}__{vn}"], float)[:nrep] for l in labs]), w) for r in runs}
-    rows = []
+    w = np.array([np.sqrt(float(info[l]["N"])) for l in labs]); majors = list(i0["major_loci"])
     all_runs = list(dict.fromkeys(obs[labs[0]].index.get_level_values(0)))
-    for r in all_runs:                  # every observed run (the null runs, plus the observed-only single-locus removals)
-        if not all(r in obs[l].index.get_level_values(0) for l in labs):
-            continue
-        T = np.array([[obs[l].t.get((r, nm), np.nan) for nm in names] for l in labs])
-        z = stouffer(T, w)
-        for j, nm in enumerate(names):
-            row = dict(run=r, variant=vn, readout=nm, t=z[j], n_cohorts=int(np.isfinite(T[:, j]).sum()))
-            row.update({f"t_{l}": T[i, j] for i, l in enumerate(labs)}); rows.append(row)
+    all_runs = [r for r in all_runs if all(r in obs[l].index.get_level_values(0) for l in labs)]
+    rows, mnul_all, GS, PER = [], {}, [], []; nrep = None
+    for vn in variants:
+        names = i0["readouts"][vn]
+        runs = [f.rsplit("__", 1)[0] for f in nul[labs[0]].files if f.endswith("__" + vn)]
+        runs = [r for r in runs if all(f"{r}__{vn}" in nul[l].files for l in labs)]
+        nrep = min(nul[l][f"full__{vn}"].shape[0] for l in labs)
+        mnul = {r: stouffer(np.stack([np.asarray(nul[l][f"{r}__{vn}"], float)[:nrep] for l in labs]), w) for r in runs}
+        vrows = []
+        for r in all_runs:              # every observed run (the null runs, plus the observed-only single-locus removals)
+            T = np.array([[obs[l].t.get((r, nm), np.nan) for nm in names] for l in labs])
+            z = stouffer(T, w)
+            for j, nm in enumerate(names):
+                row = dict(run=r, variant=vn, readout=nm, t=z[j], n_cohorts=int(np.isfinite(T[:, j]).sum()))
+                row.update({f"t_{l}": T[i, j] for i, l in enumerate(labs)}); vrows.append(row)
+        rows += vrows; mnul_all.update({f"{r}__{vn}": a for r, a in mnul.items()})
+        loo = [f"loo_{m}" for m in majors if f"loo_{m}" in mnul]
+        gs, per = grid_summary(i0["trait"], i0.get("panels"), vn, names, pd.DataFrame(vrows).set_index(["run", "readout"]).t, mnul, all_runs, loo, nrep, majors)
+        GS.append(gs); PER.append(per)
     O = pd.DataFrame(rows); d = os.path.join(out, rel); os.makedirs(d, exist_ok=True)
     O.to_csv(os.path.join(d, "observed_terms.tsv"), sep="\t", index=False, float_format="%.10g")
-    np.savez_compressed(os.path.join(d, "null_runs.npz"), **{f"{r}__{vn}": a for r, a in mnul.items()})
-    majors = list(i0["major_loci"]); loo = [f"loo_{m}" for m in majors if f"loo_{m}" in mnul]
-    gs, per = grid_summary(i0["trait"], i0.get("panels"), vn, names, O.set_index(["run", "readout"]).t, mnul, all_runs, loo, nrep, majors)
-    gs.to_csv(os.path.join(d, "grid_summary.tsv"), sep="\t", index=False, float_format="%.6g")
-    per.to_csv(os.path.join(d, "per_run_z.tsv"), sep="\t", index=False, float_format="%.6g")
+    np.savez_compressed(os.path.join(d, "null_runs.npz"), **mnul_all)
+    pd.concat(GS).to_csv(os.path.join(d, "grid_summary.tsv"), sep="\t", index=False, float_format="%.6g")
+    pd.concat(PER).to_csv(os.path.join(d, "per_run_z.tsv"), sep="\t", index=False, float_format="%.6g")
     json.dump(dict(trait=i0["trait"], N=int(sum(float(info[l]["N"]) for l in labs)), N_by_cohort={l: info[l]["N"] for l in labs}, cohorts=labs,
                    weights="sqrt(N)", panels=i0.get("panels"), nrep=int(nrep), perms_sha1=i0.get("perms_sha1"), loo_mode="drivers",
-                   major_loci=majors, variants=[vn], readouts=names), open(os.path.join(d, "run_info.json"), "w"), indent=1)
+                   major_loci=majors, variants=list(variants), readouts=i0["readouts"]), open(os.path.join(d, "run_info.json"), "w"), indent=1)
 
 
 def gene_mirror(C, trait, out, checks):
@@ -202,34 +211,79 @@ def gene_mirror(C, trait, out, checks):
               open(os.path.join(d, "run_info.json"), "w"), indent=1)
 
 
+def dose_bins(C, trait, out, checks):
+    from scipy import stats
+    labs = list(C); d = os.path.join(out, "dose_bins", trait); os.makedirs(d, exist_ok=True)
+    I = {l: json.load(open(os.path.join(r, "dose_bins", trait, "run_info.json"))) for l, r in C.items()}
+    ck = dict(fit=f"dose_bins/{trait}", cohorts=";".join(labs), same_bins=len({json.dumps([i["bins"], i["models"]]) for i in I.values()}) == 1,
+              same_panels=len({i["panels"] for i in I.values()}) == 1)
+    checks.append(ck)
+    if not (ck["same_bins"] and ck["same_panels"]):
+        raise SystemExit(f"cohorts are not comparable for the dose-response bins ({trait}): {ck}")
+    for fn, keys in (("fig3_dose_bins.tsv", ["trait", "run", "partition", "size", "cls", "side", "bin", "order"]),
+                     ("fig3_dose_shape.tsv", ["trait", "run", "partition", "size", "cls", "term", "genes_per_unit"])):
+        T = {l: pd.read_csv(os.path.join(r, "dose_bins", trait, fn), sep="	") for l, r in C.items()}
+        if len(labs) == 1:              # one cohort: its own table
+            T[labs[0]].to_csv(os.path.join(d, fn), sep="	", index=False, float_format="%.6g"); continue
+        X = pd.concat([t.assign(_c=l) for l, t in T.items()], ignore_index=True)
+        for c in ("beta", "SE", "mean_genes"):
+            if c in X:
+                X[c] = pd.to_numeric(X[c], errors="coerce")
+        ncol = "n" if "n" in X else "N"; X["_n"] = pd.to_numeric(X[ncol], errors="coerce"); rows = []
+        for kv, g in X.groupby(keys, sort=False, dropna=False):
+            r = dict(zip(keys, kv)); ref = "side" in r and r["side"] == "none"
+            u = g[np.isfinite(g.beta) & np.isfinite(g.SE) & (g.SE > 0)]
+            if ref:
+                r.update(beta=0.0, SE=0.0, P=np.nan, k_cohorts=len(g), Q_P=np.nan)
+            elif len(u):
+                w = 1 / u.SE ** 2; b = float((w * u.beta).sum() / w.sum()); se = float(1 / np.sqrt(w.sum())); Qs = float((w * (u.beta - b) ** 2).sum())
+                r.update(beta=b, SE=se, P=2 * stats.norm.sf(abs(b / se)), k_cohorts=len(u), Q_P=stats.chi2.sf(Qs, len(u) - 1) if len(u) > 1 else np.nan)
+            else:
+                r.update(beta=np.nan, SE=np.nan, P=np.nan, k_cohorts=0, Q_P=np.nan)
+            r[ncol] = g._n.sum() if g._n.notna().any() else np.nan       # carriers in the cohorts that report them
+            if "mean_genes" in g:
+                m = (g if ref else u); wn = m._n.fillna(0)
+                r["mean_genes"] = float((m.mean_genes * wn).sum() / wn.sum()) if wn.sum() > 0 else float(m.mean_genes.mean()) if len(m) else np.nan
+            r.update({f"beta_{l}": g.beta[g._c == l].iloc[0] if (g._c == l).any() else np.nan for l in labs}); r["cohort"] = "+".join(labs)
+            rows.append(r)
+        pd.DataFrame(rows).to_csv(os.path.join(d, fn), sep="	", index=False, float_format="%.6g")
+    json.dump(dict(trait=I[labs[0]]["trait"], cohorts=labs, N_by_cohort={l: I[l]["N"] for l in labs}, min_cell_by_cohort={l: I[l]["min_cell"] for l in labs},
+                   bins=I[labs[0]]["bins"], models=I[labs[0]]["models"], method="fixed-effect inverse variance per bin"),
+              open(os.path.join(d, "run_info.json"), "w"), indent=1)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cohort", action="append", required=True, help="LABEL=<export>/<stratum>/fig3 (repeat; the first is the reference)")
     ap.add_argument("--out", required=True); ap.add_argument("--code", default=os.path.normpath(os.path.join(HERE, "..", "cnv_anthro")))
-    ap.add_argument("--parts", default="joint,gene_mirror")
+    ap.add_argument("--parts", default="joint,dose_bins,gene_mirror")
     a = ap.parse_args(); C = dict(x.split("=", 1) for x in a.cohort); labs = list(C); parts = a.parts.split(",")
     if os.path.exists(a.out):
         raise SystemExit(f"{a.out} exists; choose a new output folder")
     os.makedirs(a.out)
     E = {l: json.load(open(os.path.join(r, "FIG3_EXPORT_INFO.json"))) for l, r in C.items()}
-    if len({e["design_sha1"] for e in E.values()}) != 1 or len({e["spec"] for e in E.values()}) != 1:
+    if len({e["design_sha1"] for e in E.values()}) != 1 or len({(e["spec"], e.get("spec_sha1")) for e in E.values()}) != 1:
         raise SystemExit(f"cohorts ran different designs or specs: { {l: (e['spec'], e['design_sha1']) for l, e in E.items()} }")
-    ref = C[labs[0]]; spec = json.load(open(os.path.join(ref, "designs", E[labs[0]]["spec"])))
-    design = os.path.join(ref, "designs", os.path.basename(spec["design"])); checks = []
+    ref = C[labs[0]]; spec = json.load(open(os.path.join(ref, "designs", E[labs[0]]["spec"]))); checks = []
     if "joint" in parts:
         for f in spec["fits"]:
-            g = os.path.join(ref, f["name"], "grid")
-            pairs = [p for p in sorted(os.listdir(g)) if all(os.path.isdir(os.path.join(r, f["name"], "grid", p, f["variant"])) for r in C.values())] if os.path.isdir(g) else []
-            for p in pairs:
-                meta_fit(C, os.path.join(f["name"], "grid", p, f["variant"]), a.out, f["variant"], checks)
+            g = os.path.join(ref, f["name"], "grid"); sub = f.get("dir") or f["variant"]; variants = f.get("variants") or [f["variant"]]
+            pairs = [p for p in sorted(os.listdir(g)) if all(os.path.isdir(os.path.join(r, f["name"], "grid", p, sub)) for r in C.values())] if os.path.isdir(g) else []
             if not pairs:
                 print("skip (not in every cohort):", f["name"]); continue
-            d = os.path.join(a.out, f["name"])
-            for scr, o, extra in (("mirror4_summary.py", "mirror4_cross_summary.tsv", []), ("dose_summary.py", "dose_summary.tsv", ["--variant", f["variant"]])):
+            for p in pairs:
+                meta_fit(C, os.path.join(f["name"], "grid", p, sub), a.out, variants, checks)
+            d = os.path.join(a.out, f["name"]); design = os.path.join(ref, "designs", os.path.basename(f.get("design", spec["design"])))
+            for scr, o, extra in ((("mirror4_summary.py", "mirror4_cross_summary.tsv", []), ("dose_summary.py", "dose_summary.tsv", ["--variant", f.get("variant", "")]))
+                                  if f.get("summaries", True) else ()):
                 with open(os.path.join(d, o.replace(".tsv", ".log")), "w") as fh:
                     subprocess.run([sys.executable, os.path.join(a.code, scr), "--grid", os.path.join(d, "grid"), "--design", design,
                                     "--out", os.path.join(d, o)] + extra, check=True, stdout=fh, stderr=subprocess.STDOUT)
             print("meta", f["name"], pairs, flush=True)
+    if "dose_bins" in parts:
+        for t in ("height", "bmi"):
+            if all(os.path.exists(os.path.join(r, "dose_bins", t, "fig3_dose_bins.tsv")) for r in C.values()):
+                dose_bins(C, t, a.out, checks); print("meta dose_bins", t, flush=True)
     if "gene_mirror" in parts:
         for t in ("height", "bmi"):
             if all(os.path.exists(os.path.join(r, "gene_mirror", t, "gene_z.npz")) for r in C.values()):

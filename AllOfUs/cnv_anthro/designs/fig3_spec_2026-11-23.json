@@ -10,7 +10,11 @@
  "fits": [
   {"name": "size2t_mirror", "variant": "size2t", "pairs": "all", "note": "per CNV size (single-gene, >=2-gene): total genes + TWAS up/down x LC/HC + other HC; all four CNV-trait x TWAS-trait pairs"},
   {"name": "all2t_mirror", "variant": "all2t", "pairs": "matched", "note": "the same model pooled over CNV size"},
-  {"name": "totdose", "variant": "totdose", "pairs": "matched", "note": "total genes hit only (yellow dose-aligned total)"}
+  {"name": "totdose", "variant": "totdose", "pairs": "matched", "note": "total genes hit only (yellow dose-aligned total)"},
+  {"name": "uni_N1_inf", "design": "designs/fig3_univariate_2026-11-23.json", "variants": ["u_N1_inf_up_LC", "u_N1_inf_up_HC", "u_N1_inf_down_LC", "u_N1_inf_down_HC", "u_N1_inf_other_LC", "u_N1_inf_other_HC", "u_N1_inf_n_all"], "dir": "univariate", "pairs": "matched", "summaries": false, "note": "UNIVARIATE test of each class in this CNV-size stratum (trait ~ covariates + the class's DEL and DUP gene counts, no other class terms): DEL z and DUP z against the genome-shift null, LOO as the joint fits; total genes analytic"},
+  {"name": "uni_N1_1", "design": "designs/fig3_univariate_2026-11-23.json", "variants": ["u_N1_1_up_LC", "u_N1_1_up_HC", "u_N1_1_down_LC", "u_N1_1_down_HC", "u_N1_1_other_LC", "u_N1_1_other_HC", "u_N1_1_n_all"], "dir": "univariate", "pairs": "matched", "summaries": false, "note": "UNIVARIATE test of each class in this CNV-size stratum (trait ~ covariates + the class's DEL and DUP gene counts, no other class terms): DEL z and DUP z against the genome-shift null, LOO as the joint fits; total genes analytic"},
+  {"name": "uni_N2_inf", "design": "designs/fig3_univariate_2026-11-23.json", "variants": ["u_N2_inf_up_LC", "u_N2_inf_up_HC", "u_N2_inf_down_LC", "u_N2_inf_down_HC", "u_N2_inf_other_LC", "u_N2_inf_other_HC", "u_N2_inf_n_all"], "dir": "univariate", "pairs": "matched", "summaries": false, "note": "UNIVARIATE test of each class in this CNV-size stratum (trait ~ covariates + the class's DEL and DUP gene counts, no other class terms): DEL z and DUP z against the genome-shift null, LOO as the joint fits; total genes analytic"}
  ],
- "gene_mirror": {"nrep": 10000, "seed": 20261122, "note": "gene-level DEL-DUP anticorrelation (yellow mirror total), gene_mirror_qt.py"}
+ "gene_mirror": {"nrep": 10000, "seed": 20261122, "note": "gene-level DEL-DUP anticorrelation (yellow mirror total), gene_mirror_qt.py"},
+ "dose_bins": {"min_cell_floor": 20, "note": "binned dose response of every Fig. 3 stratum (fig3_dose_bins.py): univariate per class and CNV size, fixed bins, analytic OLS; bins with 1..max(min_cell, 20) people withheld"}
 }

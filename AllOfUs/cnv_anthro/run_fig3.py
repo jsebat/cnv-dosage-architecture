@@ -7,17 +7,22 @@ its "fig3" section: {"spec": ..., "perms_file": "<shared_shifts>/{trait}_....npy
   python run_fig3.py --config configs/<cohort>.json --steps fit,summary,export [--jobs 4] [--stratum all]
 
 Steps
-  fit      conga_grid_qt.py for size2t (4 CNV-trait x TWAS-trait pairs), all2t and totdose (matched pairs), 2,000 shared shifts, LOO = drivers with
-           the 8 fixed major loci + minor_all + no_loci; gene_mirror_qt.py per trait. Finished fits are skipped (restartable).
-           -> <results_dir>/<stratum>/fig3/<fit>/grid/<cnv>_x_<twas>/<variant>/ and <results_dir>/<stratum>/fig3/gene_mirror/<trait>/
+  fit      conga_grid_qt.py for size2t (4 CNV-trait x TWAS-trait pairs), all2t and totdose (matched pairs), and the UNIVARIATE tests of each
+           class in each CNV-size stratum (fits uni_N1_inf, uni_N1_1, uni_N2_inf: 7 one-class models each; these come before the joint model,
+           Jon 2026-11-23); 2,000 shared shifts, LOO = drivers with the 8 fixed major loci + minor_all + no_loci; gene_mirror_qt.py per trait; fig3_dose_bins.py per trait (binned dose response of
+           every stratum: all / single-gene / >= 2-gene CNVs x TWAS-by-constraint classes and total genes; analytic OLS). Finished fits are
+           skipped (restartable).
+           -> <results_dir>/<stratum>/fig3/<fit>/grid/<cnv>_x_<twas>/<variant>/, .../fig3/gene_mirror/<trait>/ and .../fig3/dose_bins/<trait>/
   summary  mirror4_summary.py (M4, armDEL, armDUP) and dose_summary.py (D4, doseOth, doseTot, mirTot) per fit, for QC inside the cohort.
   export   aggregate-only, meta-ready copy -> <export_dir>/<stratum>/fig3/ (default export_dir = the config's export_dir + "_fig3"):
            per fit observed_terms.tsv (t, beta, se of every term in every run), null_runs.npz (the t of every term in every shift replicate
-           of every run, float64) and run_info.json; per trait gene_z.npz (per-gene score z of the gene mirror, with the shift offsets);
+           of every run, float64) and run_info.json; per trait gene_z.npz (per-gene score z of the gene mirror, with the shift offsets)
+           and the dose-response bin tables (fig3_dose_bins.tsv, fig3_dose_shape.tsv: beta, SE, carriers and mean genes per fixed bin);
            the design, the spec and EXPORT_MANIFEST.txt. The summary tables are NOT exported: meta_fig3.py recomputes them.
            Small-cell rule (config min_cell = k; 0 = off): a term carried by 1..k people in a run loses beta / se / t in that run, its null
            column and its mirror readout; a gene hit in 1..k people (per run, CNV size and dosage) loses its z; gene carrier counts are
-           exported only as 0 (not usable) or k + 1 (usable), never as counts; counts 1..k in run_info.json are written as "<=k".
+           exported only as 0 (not usable) or k + 1 (usable), never as counts; counts 1..k in run_info.json are written as "<=k"; a
+           dose-response bin with 1..max(k, 20) people has no estimate, and the no_loci bins carry no carrier counts (fig3_dose_bins.py).
 null model: genome shift of the gene annotation, 2,000 shifts shared with UK Biobank (the shift file's sha1 is checked against the spec before
 and after every fit); gene mirror: DUP-vs-DEL gene-circle shift, 10,000 shifts, same seed in every cohort (gene_mirror_qt.py). Total-genes
 terms: analytic t (no annotation, so no shift null).
@@ -56,6 +61,14 @@ def sha1_shifts(path, nrep):
     return hashlib.sha1(np.asarray(offs[:nrep], dtype=np.int64).tobytes()).hexdigest()[:16]
 
 
+def variants_of(f):
+    return f.get("variants") or [f["variant"]]
+
+
+def dir_of(f):
+    return f.get("dir") or f["variant"]
+
+
 def pairs_of(fit, traits):
     return [(c, t) for c in traits for t in traits] if fit["pairs"] == "all" else [(c, c) for c in traits]
 
@@ -83,10 +96,10 @@ def readout_names(var):
     return n + [f"{x}|mirror" for x in var["DEL"] if x in var["DUP"] and x != "n_all"]
 
 
-def export_fit(src, dst, var, k):
-    """One conga_grid_qt.py output folder -> its export. Returns the number of (run, term) cells withheld."""
+def export_fit(src, dst, vars_, k):
+    """One conga_grid_qt.py output folder (one or more variants) -> its export. Returns the number of (run, term) cells withheld."""
     os.makedirs(dst, exist_ok=True)
-    names = readout_names(var); vn = var["name"]
+    names = {v["name"]: readout_names(v) for v in vars_}
     ob = pd.read_csv(os.path.join(src, "observed_terms.tsv"), sep="\t")
     nz = np.load(os.path.join(src, "null_runs.npz")); nul = {f: np.array(nz[f], dtype=np.float64) for f in nz.files}
     small = set()
@@ -102,9 +115,10 @@ def export_fit(src, dst, var, k):
         ob["n_carriers_term"] = ob.n_carriers_term.astype(object)
         ob.loc[n.between(1, k).to_numpy(), "n_carriers_term"] = f"<={k}"
         for (rn, ro) in small:
-            key = f"{rn}__{vn}"
-            if key in nul and ro in names:
-                nul[key][:, names.index(ro)] = np.nan
+            for vn, nm in names.items():
+                key = f"{rn}__{vn}"
+                if key in nul and ro in nm:
+                    nul[key][:, nm.index(ro)] = np.nan
     keep = [c for c in ["run", "variant", "readout", "beta", "se", "t", "n_carriers_term"] if c in ob.columns]
     ob[keep].to_csv(os.path.join(dst, "observed_terms.tsv"), sep="\t", index=False, float_format="%.10g")
     np.savez_compressed(os.path.join(dst, "null_runs.npz"), **nul)
@@ -149,6 +163,10 @@ def audit(root, k):
                 n = pd.to_numeric(pd.read_csv(p, sep="\t").get("n_carriers_term"), errors="coerce")
                 if n.between(1, k).any():
                     bad.append(f"count 1..{k} in {p}")
+            if f == "fig3_dose_bins.tsv" and k > 0:
+                d = pd.read_csv(p, sep="	"); n = pd.to_numeric(d.n, errors="coerce")
+                if n.between(1, k).any() or (d.run.ne("full") & n.notna() & d.side.ne("none")).any():
+                    bad.append(f"small or no_loci bin counts in {p}")
             if f == "gene_z.npz" and k > 0:
                 z = np.load(p)
                 for a in [a for a in z.files if a.startswith("n__")]:
@@ -161,14 +179,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True); ap.add_argument("--steps", default="fit,summary")
     ap.add_argument("--stratum", default="all"); ap.add_argument("--jobs", type=int, default=None)
-    ap.add_argument("--only_fit", default="", help="comma list of fit names (size2t_mirror, all2t_mirror, totdose, gene_mirror)")
+    ap.add_argument("--only_fit", default="", help="comma list of fit names (size2t_mirror, all2t_mirror, totdose, gene_mirror, dose_bins)")
     ap.add_argument("--min_cell", type=int, default=None, help="override the config's min_cell for the export (0 = no suppression)")
     a = ap.parse_args()
     C = expand(json.load(open(a.config))); F = C.get("fig3")
     if not F:
         raise SystemExit('the config has no "fig3" section')
     S = json.load(open(os.path.join(HERE, F["spec"]))); G = C["grid"]; steps = a.steps.split(",")
-    design = {v["name"]: v for v in json.load(open(os.path.join(HERE, S["design"])))}
+    dfile = lambda f: f.get("design", S["design"])
+    DES = {p_: {v["name"]: v for v in json.load(open(os.path.join(HERE, p_)))} for p_ in sorted({dfile(f) for f in S["fits"]})}
     traits = [t for t in ("height", "bmi") if t in C["traits"]]
     strat = a.stratum if C.get("strata") else ""
     root = os.path.join(C["results_dir"], strat, "fig3")
@@ -188,12 +207,12 @@ def main():
         os.makedirs(os.path.join(root, "logs"), exist_ok=True); calls = []
         for f in fits:
             for c, t in pairs_of(f, traits):
-                T = C["traits"][c]; out = os.path.join(root, f["name"], "grid", f"{c}_x_{t}", f["variant"])
+                T = C["traits"][c]; out = os.path.join(root, f["name"], "grid", f"{c}_x_{t}", dir_of(f))
                 if os.path.exists(os.path.join(out, "run_info.json")):
                     print("skip (done):", out, flush=True); continue
                 calls.append((["conga_grid_qt.py", "--pheno", pheno, "--trait", T["column"], "--cnv", C["cnv_table"], "--twas", C["traits"][t]["twas"],
                                "--panels", S["panels"], "--exons", G["exons"], "--gene_cov", G["gene_cov"], "--clingen", G["clingen"],
-                               "--loci", G["loci"], "--loo_runs", G["loo_runs"], "--design", S["design"], "--only", f["variant"],
+                               "--loci", G["loci"], "--loo_runs", G["loo_runs"], "--design", dfile(f), "--only", ",".join(variants_of(f)),
                                "--nrep", str(S["nrep"]), "--seed", str(S["seed"]), "--loo_mode", S["loo_mode"], "--major_loci", S["major_loci"],
                                "--perms_file", pf[c], "--numeric", ",".join(T["numeric"]), "--factors", ",".join(T["factors"]), "--out", out],
                               os.path.join(root, "logs", f"fit_{f['name']}_{c}_x_{t}.log")))
@@ -208,20 +227,31 @@ def main():
                                "--loo_runs", G["loo_runs"], "--major_loci", S["major_loci"], "--nrep", str(gm["nrep"]), "--seed", str(gm["seed"]),
                                "--numeric", ",".join(T["numeric"]), "--factors", ",".join(T["factors"]), "--out", out],
                               os.path.join(root, "logs", f"gene_mirror_{t}.log")))
+        if S.get("dose_bins") and (not only or "dose_bins" in only):
+            kb = max(int(C.get("min_cell", 20)), int(S["dose_bins"].get("min_cell_floor", 20)))
+            for t in traits:
+                T = C["traits"][t]; out = os.path.join(root, "dose_bins", t)
+                if os.path.exists(os.path.join(out, "run_info.json")):
+                    print("skip (done):", out, flush=True); continue
+                calls.append((["fig3_dose_bins.py", "--pheno", pheno, "--trait", T["column"], "--cnv", C["cnv_table"], "--twas", T["twas"],
+                               "--panels", S["panels"], "--exons", G["exons"], "--gene_cov", G["gene_cov"], "--loci", G["loci"],
+                               "--loo_runs", G["loo_runs"], "--numeric", ",".join(T["numeric"]), "--factors", ",".join(T["factors"]),
+                               "--min_cell", str(kb), "--cohort", str(C.get("cohort", "cohort")), "--out", out],
+                              os.path.join(root, "logs", f"dose_bins_{t}.log")))
         with ThreadPoolExecutor(max_workers=jobs) as ex:
             list(ex.map(lambda c: run(c[0], c[1], thr), calls))
         for f in fits:                  # every fit used the shared shifts and the fixed major loci
             for c, t in pairs_of(f, traits):
-                i = json.load(open(os.path.join(root, f["name"], "grid", f"{c}_x_{t}", f["variant"], "run_info.json")))
+                i = json.load(open(os.path.join(root, f["name"], "grid", f"{c}_x_{t}", dir_of(f), "run_info.json")))
                 assert i["perms_sha1"] == S["perms_sha1"][c] and i["nrep"] == S["nrep"], (f["name"], c, t, i["perms_sha1"])
                 assert ",".join(i["major_loci"]) == S["major_loci"], (f["name"], c, t, i["major_loci"])
         print("fits done:", root, flush=True)
 
     if "summary" in steps:
-        for f in fits:
+        for f in [f for f in fits if f.get("summaries", True)]:     # the univariate fits need none: their grid_summary.tsv is the summary
             d = os.path.join(root, f["name"])
             for scr, o, extra in (("mirror4_summary.py", "mirror4_cross_summary.tsv", []), ("dose_summary.py", "dose_summary.tsv", ["--variant", f["variant"]])):
-                run([scr, "--grid", os.path.join(d, "grid"), "--design", S["design"], "--out", os.path.join(d, o)] + extra,
+                run([scr, "--grid", os.path.join(d, "grid"), "--design", dfile(f), "--out", os.path.join(d, o)] + extra,
                     os.path.join(d, o.replace(".tsv", ".log")), cpu)
         print("summaries written (z and P only; for QC, not exported):", root, flush=True)
 
@@ -233,16 +263,25 @@ def main():
         nterm = ngene = 0
         for f in fits:
             for c, t in pairs_of(f, traits):
-                rel = os.path.join(f["name"], "grid", f"{c}_x_{t}", f["variant"])
-                nterm += export_fit(os.path.join(root, rel), os.path.join(E, rel), design[f["variant"]], k)
+                rel = os.path.join(f["name"], "grid", f"{c}_x_{t}", dir_of(f))
+                nterm += export_fit(os.path.join(root, rel), os.path.join(E, rel), [DES[dfile(f)][v] for v in variants_of(f)], k)
         for t in traits:
             if os.path.exists(os.path.join(root, "gene_mirror", t, "gene_z.npz")):
                 ngene += export_gene_mirror(os.path.join(root, "gene_mirror", t), os.path.join(E, "gene_mirror", t), k)
+            db = os.path.join(root, "dose_bins", t)             # already small-cell masked when written (fig3_dose_bins.py --min_cell)
+            if os.path.exists(os.path.join(db, "run_info.json")):
+                kb = json.load(open(os.path.join(db, "run_info.json")))["min_cell"]
+                if kb < k:
+                    raise SystemExit(f"{db} was written with min_cell {kb} < {k}: delete it and rerun the fit step")
+                os.makedirs(os.path.join(E, "dose_bins", t))
+                for fn in ("fig3_dose_bins.tsv", "fig3_dose_shape.tsv", "run_info.json"):
+                    shutil.copy(os.path.join(db, fn), os.path.join(E, "dose_bins", t, fn))
         os.makedirs(os.path.join(E, "designs"), exist_ok=True)
-        for p in (S["design"], F["spec"]):
+        for p in list(DES) + [F["spec"]]:
             shutil.copy(os.path.join(HERE, p), os.path.join(E, "designs", os.path.basename(p)))
         json.dump(dict(cohort=C.get("cohort"), stratum=strat or "all", min_cell=k, spec=os.path.basename(F["spec"]),
-                       design_sha1=hashlib.sha1(open(os.path.join(HERE, S["design"]), "rb").read()).hexdigest()[:16],
+                       design_sha1=hashlib.sha1(b"".join(json.dumps(DES[p_], sort_keys=True).encode() for p_ in DES)).hexdigest()[:16],
+                       spec_sha1=hashlib.sha1(json.dumps({k_: v for k_, v in S.items() if k_ != "note"}, sort_keys=True).encode()).hexdigest()[:16],
                        traits=traits, fits=[f["name"] for f in fits]), open(os.path.join(E, "FIG3_EXPORT_INFO.json"), "w"), indent=1)
         bad = audit(E, k); tot = 0; lines = []
         for d, _, fs in os.walk(E):

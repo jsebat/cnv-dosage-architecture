@@ -751,9 +751,9 @@ def schematic_dose(ax, trait):
     # grey total-genes arrows removed (Jon 2026-11-23: "Just remove the gray arrows"); the term stays in the model and in panel a
     for st, col in (("LC", "#f28e2b"), ("HC", "#7b3294")):
         component(Q, trait, (st, "HC" if st == "LC" else "LC"), col, "full", [(d_("D4"), u, ("D4", st)), (a_("M4"), m, ("M4", st))],
-                  [(a_("armDEL"), (1, 0)), (a_("armDUP"), (0, 1))])
+                  [])   # Jon 2026-11-23: 'Purple and Orange are meant to indicate an axis where there is CNV-TWAS convergence' -> diagonals only, no DEL/DUP arm fallback
     component(Q, trait, ("HC",), "#1b7837", "arm", [(d_("doseOth"), u, ("doseOth", "HC")), (o_("cls:other:HC", "mirror"), m, ("mirOth", "HC"))],
-              [(o_("cls:other:HC", "DEL"), (1, 0)), (o_("cls:other:HC", "DUP"), (0, 1))])
+              [(o_("cls:other:HC", "DEL"), (1, 0), ("othDEL", "HC")), (o_("cls:other:HC", "DUP"), (0, 1), ("othDUP", "HC"))])
     flush_arrows(ax, Q, L)
     ax.set_xlim(-L, L); ax.set_ylim(-L, L); ax.set_aspect("equal"); ax.set_xticks([]); ax.set_yticks([])
     for s in ax.spines.values():
@@ -805,8 +805,9 @@ def component(Q, trait, strata, col, kind, diag, arms):
             Q.append((np.asarray(u, float) * pk[0], col, pk[1], kind)); hit = True
     if hit:
         return
-    for fetch, u in arms:
-        pk = pick_arrow(fetch, trait, strata)
+    for a_item in arms:
+        fetch, u = a_item[:2]; key = a_item[2] if len(a_item) > 2 else None   # key: the panel a tiles behind an axis arrow
+        pk = pick_arrow(fetch, trait, strata, key)
         if pk is not None:
             Q.append((np.asarray(u, float) * pk[0], col, pk[1], kind))
 
@@ -948,7 +949,13 @@ def fig3(dose=False):
                             ax.add_patch(Rectangle((x0 + k, yy), 1, 1, fc="#f2f2f2", ec="white", lw=1))
                             ax.text(x0 + k + .5, yy + .5, "ref.", ha="center", va="center", size=5.2, color=GREY)
                             continue
-                        TA.add(ax, x0 + k, yy, 1, 1, s2term(trait, f"{size}~cls:{cls}:{st}", dos), tag(size, ("a", cls, dos)))
+                        # Jon 2026-11-23 ('If there is a purple arrow, there should be a purple box on the grid', via ConGA): an arrow that
+                        # falls back to the DEL / DUP axis outlines the class tiles it comes from (arm = up - down of that dosage; or the
+                        # weak-or-no-TWAS HC term itself)
+                        sc = None
+                        if cls == "other" and st == "HC":   # green only: orange / purple never fall back to an axis (Jon 2026-11-23)
+                            sc = ("#1b7837", (("oth" + dos, "HC"), trait, size))
+                        TA.add(ax, x0 + k, yy, 1, 1, s2term(trait, f"{size}~cls:{cls}:{st}", dos), tag(size, ("a", cls, dos)), sigcol=sc)
                 if S2VAR == "size2t":
                     xm = x0 + 2 + GAP
                     if st == "LC" and size == "N1_inf":   # all-CNVs row: the yellow totals (Jon 2026-11-23)
@@ -1160,6 +1167,91 @@ def fig_zband():
     save(fig, "FigS_twas_zband_convergence")
 
 
+BINS3 = Path(META3) / "dose_bins" if META3 else Path(os.environ.get("GW2_FIG3_BINS", ROOT.parent / "fig3_dose_bins_2026-11-23"))
+
+
+def figS_dose_bins():
+    """Jon 2026-11-23: 'dose response plots like this [Fig. 2a-h] for ALL of the major strata in new joint model (Fig. 3)'. One figure per trait.
+    Rows = CNV size (all CNVs, single-gene CNVs, >= 2-gene CNVs); columns = gene class (TWAS z > +3, z < -3, weak or no TWAS; LC blue, HC red)
+    and total genes (grey). x = mean genes deleted (left) / duplicated (right) in each fixed bin; y = adjusted difference in the trait (SD) from
+    people with no gene of that class in that CNV-size class, 95% CI; dotted = 34 recurrent intervals removed. Input: fig3_dose_bins.py tables
+    (GW2_FIG3_BINS/<trait>/fig3_dose_bins.tsv), or their meta-analysis (GW2_FIG3_META/dose_bins). UNIVARIATE (Jon 2026-11-23: 'This comes
+    before the joint model, so these are univariate tests of stratified CNVs'): every curve is its own model, trait ~ covariates + the bins of
+    that class in that CNV-size stratum (partition 'uni'). Each panel also prints the univariate DEL z and DUP z of the class (linear gene
+    count, conga_grid_qt.py fits uni_<size>; <bins folder>/../uni_<size>/grid/<trait>_x_<trait>/univariate/grid_summary.tsv).
+    null model: bin points and 95% CI: none (analytic OLS, descriptive; bins with 1-20 people are not shown). DEL z / DUP z: genome shift of the
+    gene annotation, 2,000 shared shifts; * P < 0.05; † also held in all 9 locus-removal runs. Total genes: analytic t (no annotation)."""
+    import json
+    from scipy.stats import norm
+    ROWS = [("N1_inf", "All CNVs", "uni", "uni"), ("N1_1", "Single-gene CNVs", "uni", "uni"), ("N2_inf", "≥2-gene CNVs", "uni", "uni")]
+
+    def uni_z(trait, size, cls):
+        """-> {'DEL': (z, P, held), 'DUP': ...} of the univariate fit of this class and stratum, or {}."""
+        d = BINS3.parent / f"uni_{size}" / "grid" / f"{trait}_x_{trait}" / "univariate"; f = d / "grid_summary.tsv"
+        if not f.exists():
+            return {}
+        g = pd.read_csv(f, sep="\t"); term = f"{size}~n_all" if cls == "all" else f"{size}~cls:{cls.replace('_', ':')}"; out = {}
+        for arm in ("DEL", "DUP"):
+            r = g[g.readout == f"{term}|{arm}"]
+            if not len(r):
+                continue
+            r = r.iloc[0]
+            if cls == "all":
+                t = float(r.t_analytic); out[arm] = (t, 2 * norm.sf(abs(t)), analytic_held(d, f"{term}|{arm}", t))
+            else:
+                out[arm] = (r.z_emp, r.P_emp, held9(r))
+        return out
+    COLS = [("up", "TWAS z > +3"), ("down", "TWAS z < −3"), ("other", "weak or no TWAS"), ("all", "total genes")]
+    for trait in TRAITS:
+        f = BINS3 / trait / "fig3_dose_bins.tsv"
+        if not f.exists():
+            print("no dose bins for", trait, f); continue
+        B = pd.read_csv(f, sep="\t"); B["beta"] = pd.to_numeric(B.beta, errors="coerce"); B["SE"] = pd.to_numeric(B.SE, errors="coerce")
+        lab = os.environ.get("GW2_FIG3_LABEL")
+        if lab is None:
+            mi = Path(META3) / "meta_info.json" if META3 else None
+            lab = json.load(open(mi)).get("label", "") if mi and mi.exists() else {"UKBB": "UK Biobank"}.get(str(B.cohort.iloc[0]), str(B.cohort.iloc[0]))
+        fig, axs = plt.subplots(3, 4, figsize=(7.2, 6.0), sharex=True)
+        for i, (size, slab, pcls, pall) in enumerate(ROWS):
+            for j, (cls, clab) in enumerate(COLS):
+                ax = axs[i, j]
+                sets = [("all", "total genes", GREY, "o")] if cls == "all" else [(f"{cls}_LC", "LC genes", LCC, "o"), (f"{cls}_HC", "HC genes", HCC, "s")]
+                P = B[(B.partition == (pall if cls == "all" else pcls)) & (B["size"] == size)]
+                for k, (c, l_, col, mk) in enumerate(sets):
+                    for rn in ("full", "no_loci"):
+                        d = P[(P.cls == c) & (P.run == rn)]; d = d[np.isfinite(d.beta)].sort_values("order")
+                        x = np.where(d.side == "DEL", -1, 1) * d.mean_genes.fillna(0) * (1 + (k - (len(sets) - 1) / 2) * .06)
+                        ax.errorbar(x, d.beta, yerr=1.96 * d.SE, color=col, marker=mk, ms=3, lw=1.2 if rn == "full" else .8, ls="-" if rn == "full" else ":",
+                                    capsize=1.2, mec="white", mew=.4, alpha=1 if rn == "full" else .55, label=l_ if rn == "full" else None)
+                ax.set_xscale("symlog", linthresh=1); ax.axhline(0, color=LIGHT, lw=.7, zorder=0); ax.axvline(0, color=LIGHT, lw=.7, zorder=0)
+                t = [-30, -10, -3, -1, 0, 1, 3, 10, 30]; ax.set_xlim(-45, 45); ax.set_xticks(t); ax.set_xticklabels([str(abs(v)) for v in t], fontsize=5.4)
+                ax.tick_params(axis="y", labelsize=5.6)
+                for k, (c, l_, col, mk) in enumerate(sets):       # univariate z of the class: DEL bottom-left, DUP bottom-right
+                    zz = uni_z(trait, size, c)
+                    for arm, xa, ha in (("DEL", .03, "left"), ("DUP", .97, "right")):
+                        if arm in zz and np.isfinite(zz[arm][0]):
+                            z_, p_, h_ = zz[arm]
+                            ax.text(xa, .03 + .085 * (len(sets) - 1 - k), f"z {z_:+.1f}" + ("*" if p_ < .05 else "") + ("†" if h_ else ""), transform=ax.transAxes,
+                                    ha=ha, va="bottom", size=5.2, color=col, weight="bold" if p_ < .05 else "normal")
+                if i == 0:
+                    ax.set_title(clab, fontsize=7.4, weight="bold")
+                    if j in (0, 3):
+                        ax.legend(frameon=False, fontsize=5.4, loc="best", handlelength=1.4)
+                if j == 0:
+                    ax.set_ylabel(f"{slab}\n{TL[trait]} (SD), adjusted", fontsize=6.4)
+                if i == 2:
+                    ax.set_xlabel("genes deleted     genes duplicated", fontsize=5.8)
+        fig.suptitle(f"{TL[trait]}: univariate dose response of each gene class, by CNV size", x=.02, ha="left", fontsize=8.6, weight="bold")
+        if lab:
+            fig.text(.99, .992, lab, ha="right", va="top", size=6.4, color=GREY)
+        fig.text(.02, .006, "points: difference from people with no gene of that class in that CNV-size stratum, each class in its own model (95% CI, analytic);  "
+                 "dotted: 34 recurrent intervals removed;  bins with 1–20 people not shown\n"
+                 "z: univariate z of the class's gene count per dosage against the genome-shift null (total genes: analytic t);  * P < 0.05;  "
+                 "† P < 0.05 and held when each of 8 major loci, or all minor loci, is removed", size=5.0, color=INK, va="bottom")
+        fig.tight_layout(rect=(0, .035, 1, .965))
+        save(fig, f"FigS_fig3_dose_response_{trait}" + ("_meta" if META3 else ""))
+
+
 def save(fig, name):
     for ext in ("png", "pdf"):
         fig.savefig(OUT / f"{name}.{ext}", dpi=300)
@@ -1172,6 +1264,7 @@ if __name__ == "__main__":
     if "2" in want: fig2()
     if "3" in want: fig3()
     if "D" in want: fig3(dose=True)   # alternate Fig. 3, dose-aligned axis (Jon 2026-11-23)
+    if "B" in want: figS_dose_bins()  # binned dose response of every Fig. 3 stratum (Jon 2026-11-23)
     if "S" in want: figS_heatmaps()
     if "Z" in want: fig_zband()
     if "X" in want: figS_cross_mirror()

@@ -14,10 +14,11 @@ import sys
 import numpy as np
 import pandas as pd
 
-SUB = ["size2t_mirror", "all2t_mirror", "totdose", "gene_mirror"]
+SUB = ["size2t_mirror", "all2t_mirror", "totdose", "gene_mirror", "dose_bins", "uni_N1_inf", "uni_N1_1", "uni_N2_inf"]
 KEYS = {"grid_summary.tsv": ["variant", "readout"], "mirror4_cross_summary.tsv": ["trait", "variant", "size", "stratum", "stat"],
-        "dose_summary.tsv": ["trait", "variant", "size", "stratum", "stat"], "gene_mirror_summary.tsv": ["size", "stratum", "stat"]}
-SKIP = {"cohorts", "weights"}
+        "dose_summary.tsv": ["trait", "variant", "size", "stratum", "stat"], "gene_mirror_summary.tsv": ["size", "stratum", "stat"],
+        "fig3_dose_bins.tsv": ["trait", "run", "partition", "size", "cls", "side", "bin"], "fig3_dose_shape.tsv": ["trait", "run", "partition", "size", "cls", "term"]}
+SKIP = {"cohorts", "weights", "cohort"}
 
 
 def roots(x):

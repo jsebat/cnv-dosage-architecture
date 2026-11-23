@@ -1,0 +1,191 @@
+[
+ {
+  "name": "u_N1_inf_up_LC",
+  "DEL": [
+   "N1_inf~cls:up:LC"
+  ],
+  "DUP": [
+   "N1_inf~cls:up:LC"
+  ]
+ },
+ {
+  "name": "u_N1_inf_up_HC",
+  "DEL": [
+   "N1_inf~cls:up:HC"
+  ],
+  "DUP": [
+   "N1_inf~cls:up:HC"
+  ]
+ },
+ {
+  "name": "u_N1_inf_down_LC",
+  "DEL": [
+   "N1_inf~cls:down:LC"
+  ],
+  "DUP": [
+   "N1_inf~cls:down:LC"
+  ]
+ },
+ {
+  "name": "u_N1_inf_down_HC",
+  "DEL": [
+   "N1_inf~cls:down:HC"
+  ],
+  "DUP": [
+   "N1_inf~cls:down:HC"
+  ]
+ },
+ {
+  "name": "u_N1_inf_other_LC",
+  "DEL": [
+   "N1_inf~cls:other:LC"
+  ],
+  "DUP": [
+   "N1_inf~cls:other:LC"
+  ]
+ },
+ {
+  "name": "u_N1_inf_other_HC",
+  "DEL": [
+   "N1_inf~cls:other:HC"
+  ],
+  "DUP": [
+   "N1_inf~cls:other:HC"
+  ]
+ },
+ {
+  "name": "u_N1_inf_n_all",
+  "DEL": [
+   "N1_inf~n_all"
+  ],
+  "DUP": [
+   "N1_inf~n_all"
+  ]
+ },
+ {
+  "name": "u_N1_1_up_LC",
+  "DEL": [
+   "N1_1~cls:up:LC"
+  ],
+  "DUP": [
+   "N1_1~cls:up:LC"
+  ]
+ },
+ {
+  "name": "u_N1_1_up_HC",
+  "DEL": [
+   "N1_1~cls:up:HC"
+  ],
+  "DUP": [
+   "N1_1~cls:up:HC"
+  ]
+ },
+ {
+  "name": "u_N1_1_down_LC",
+  "DEL": [
+   "N1_1~cls:down:LC"
+  ],
+  "DUP": [
+   "N1_1~cls:down:LC"
+  ]
+ },
+ {
+  "name": "u_N1_1_down_HC",
+  "DEL": [
+   "N1_1~cls:down:HC"
+  ],
+  "DUP": [
+   "N1_1~cls:down:HC"
+  ]
+ },
+ {
+  "name": "u_N1_1_other_LC",
+  "DEL": [
+   "N1_1~cls:other:LC"
+  ],
+  "DUP": [
+   "N1_1~cls:other:LC"
+  ]
+ },
+ {
+  "name": "u_N1_1_other_HC",
+  "DEL": [
+   "N1_1~cls:other:HC"
+  ],
+  "DUP": [
+   "N1_1~cls:other:HC"
+  ]
+ },
+ {
+  "name": "u_N1_1_n_all",
+  "DEL": [
+   "N1_1~n_all"
+  ],
+  "DUP": [
+   "N1_1~n_all"
+  ]
+ },
+ {
+  "name": "u_N2_inf_up_LC",
+  "DEL": [
+   "N2_inf~cls:up:LC"
+  ],
+  "DUP": [
+   "N2_inf~cls:up:LC"
+  ]
+ },
+ {
+  "name": "u_N2_inf_up_HC",
+  "DEL": [
+   "N2_inf~cls:up:HC"
+  ],
+  "DUP": [
+   "N2_inf~cls:up:HC"
+  ]
+ },
+ {
+  "name": "u_N2_inf_down_LC",
+  "DEL": [
+   "N2_inf~cls:down:LC"
+  ],
+  "DUP": [
+   "N2_inf~cls:down:LC"
+  ]
+ },
+ {
+  "name": "u_N2_inf_down_HC",
+  "DEL": [
+   "N2_inf~cls:down:HC"
+  ],
+  "DUP": [
+   "N2_inf~cls:down:HC"
+  ]
+ },
+ {
+  "name": "u_N2_inf_other_LC",
+  "DEL": [
+   "N2_inf~cls:other:LC"
+  ],
+  "DUP": [
+   "N2_inf~cls:other:LC"
+  ]
+ },
+ {
+  "name": "u_N2_inf_other_HC",
+  "DEL": [
+   "N2_inf~cls:other:HC"
+  ],
+  "DUP": [
+   "N2_inf~cls:other:HC"
+  ]
+ },
+ {
+  "name": "u_N2_inf_n_all",
+  "DEL": [
+   "N2_inf~n_all"
+  ],
+  "DUP": [
+   "N2_inf~n_all"
+  ]
+ }
+]
