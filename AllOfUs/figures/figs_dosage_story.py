@@ -742,7 +742,11 @@ def schematic_dose(ax, trait):
     u = np.array([1, 1]) / np.sqrt(2); Q = []
     d_ = lambda stat: (lambda t, s, st_: dget(t, s, st_, stat))
     a_ = lambda stat: (lambda t, s, st_: s2get(t, s, st_, stat))
-    o_ = lambda term, arm: (lambda t, s, st_: s2term(t, f"{s}~{term}", arm))
+    def o_(term, arm, flip=False):
+        def f(t, s, st_):
+            r = s2term(t, f"{s}~{term}", arm)
+            return None if r is None else ((-r[0], *r[1:]) if flip else r)
+        return f
     # one arrow per colour (component): dose-aligned diagonal, else the DEL / DUP axis arrows of the same component
     m = np.array([-1, 1]) / np.sqrt(2)          # mirror diagonal (up-left = duplication raises, deletion lowers)
     ax.plot([-L, L], [L, -L], color=GREY, lw=.7, ls="--", zorder=1)
@@ -754,7 +758,11 @@ def schematic_dose(ax, trait):
     # grey total-genes arrows removed (Jon 2026-11-23: "Just remove the gray arrows"); the term stays in the model and in panel a
     for st, col in (("LC", "#f28e2b"), ("HC", "#7b3294")):
         component(Q, trait, (st, "HC" if st == "LC" else "LC"), col, "full", [(d_("D4"), u, ("D4", st)), (a_("M4"), m, ("M4", st))],
-                  [(a_("armDEL"), (1, 0), ("armDEL", st)), (a_("armDUP"), (0, 1), ("armDUP", st))])
+                  [[(o_(f"cls:{c}:{st}", dos, flip=(c == "down")), uv, (f"t{c}{dos}", st)) for c in ("up", "down")]
+                   for dos, uv in (("DEL", (1, 0)), ("DUP", (0, 1)))])
+    # Jon 2026-11-23 (via ConGA): 'Orange and Purple are ALSO supposed to fall back the same as green' / 'Single tile, like green': if no
+    # diagonal passes, a DEL / DUP axis arrow from the TWAS-up tile, or the TWAS-down tile with its sign flipped to the TWAS direction, of that
+    # dosage (the passing one with the larger |z|); no up - down arm
     # Jon 2026-11-23 (hierarchy, same rule in the ConGA disorder figure): diagonal(s) first; only if no diagonal passes, the DEL / DUP arm
     # (up - down of one dosage, CNV-TWAS convergence in one dosage) is drawn on its axis; an arm pointing against its usual direction = divergence
     component(Q, trait, ("HC",), "#1b7837", "arm", [(d_("doseOth"), u, ("doseOth", "HC")), (o_("cls:other:HC", "mirror"), m, ("mirOth", "HC"))],
@@ -811,6 +819,16 @@ def component(Q, trait, strata, col, kind, diag, arms):
     if hit:
         return
     for a_item in arms:
+        if isinstance(a_item, list):   # alternatives on one axis (single tiles): the passing one with the larger |z|; only it is outlined
+            best = None
+            for fetch, u, key in a_item:
+                pk = pick_arrow(fetch, trait, strata, None)
+                if pk is not None and (best is None or abs(pk[0]) > abs(best[0][0])):
+                    best = (pk, u, fetch, key)
+            if best is not None:
+                pick_arrow(best[2], trait, strata, best[3])   # records the drawn tile
+                Q.append((np.asarray(best[1], float) * best[0][0], col, best[0][1], kind))
+            continue
         fetch, u = a_item[:2]; key = a_item[2] if len(a_item) > 2 else None   # key: the panel a tiles behind an axis arrow
         pk = pick_arrow(fetch, trait, strata, key)
         if pk is not None:
@@ -964,7 +982,7 @@ def fig3(dose=False):
                         # weak-or-no-TWAS HC term itself)
                         sc = None
                         if cls in ("up", "down"):   # orange / purple axis arrow (hierarchy rule) boxes its two TWAS tiles
-                            sc = ("#f28e2b" if st == "LC" else "#7b3294", (("arm" + dos, st), trait, size))
+                            sc = ("#f28e2b" if st == "LC" else "#7b3294", ((f"t{cls}{dos}", st), trait, size))   # single-tile fallback
                         elif cls == "other" and st == "HC":
                             sc = ("#1b7837", (("oth" + dos, "HC"), trait, size))
                         TA.add(ax, x0 + k, yy, 1, 1, s2term(trait, f"{size}~cls:{cls}:{st}", dos), tag(size, ("a", cls, dos)), sigcol=sc)
