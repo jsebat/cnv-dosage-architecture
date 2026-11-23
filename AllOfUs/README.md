@@ -18,8 +18,8 @@ The folder also holds the code that meta-analyses the two cohorts and redraws th
 - `ukbb/assemble_ukbb_fig3.py`, `ukbb/fig3_ukbb_export_meta_2026-11-23.sbatch`: the UK Biobank export from the finished runs.
 - `meta/meta_fig3.py`, `ukbb/meta_fig3_expanse.sbatch`: the meta-analysis at UCSD; `meta/compare_fig3_tables.py` checks two table sets.
 - `figures/figs_dosage_story.py D` with `GW2_FIG3_META=<meta folder>` redraws Fig. 3 from the meta-analysis.
-- Rare-CNV filter (2026-11-23): `cnv_anthro/cnv_freq_filter.py`, set in the spec (`cnv_filter`: per-position carrier frequency, calls mostly
-  above 1% dropped) and applied by `run_fig3.py` before every fit, in every cohort.
+- Call set of Fig. 3 (2026-11-23): the PGC freeze filters in every cohort (spec `cnv_filter`); `cnv_anthro/cnv_freq_filter.py` records the
+  per-position carrier frequency and holds an optional position filter that is off.
 - Univariate tests and dose-response bins of every Fig. 3 stratum: spec fits `uni_*`, `cnv_anthro/fig3_dose_bins.py`; figure key `B`.
 - Gene-based association (2026-11-23): `cnv_anthro/gene_assoc_qt.py` (`run_pipeline.py --steps genes,genes_export`),
   `cnv_anthro/export_gene_assoc.py`, `meta/meta_gene_assoc.py`.
