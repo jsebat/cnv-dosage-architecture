@@ -717,7 +717,10 @@ def total_arrows(Q, trait, dose):
     gmf = GM / trait / "gene_mirror_summary.tsv"
     if gmf.exists():
         g = pd.read_csv(gmf, sep="\t"); g = g[(g["size"] == "all sizes") & (g.stratum == "all")].set_index("stat"); tot = g.loc["total"]
-        if tot.P < .05:
+        # Jon 2026-11-23: arrows only at FDR < 5% (BH across the two traits) and P < 0.05 in every LOO run
+        Pt = [pd.read_csv(GM / t_ / "gene_mirror_summary.tsv", sep="	").query("size == 'all sizes' and stratum == 'all' and stat == 'total'").P.iloc[0] for t_ in TRAITS]
+        qt = dict(zip(TRAITS, bh(Pt)))[trait]
+        if qt < .05 and tot.n_loo > 0 and tot.loo_held == tot.n_loo:
             dd = np.array([-1, 1]) / np.sqrt(2) if tot.obs < 0 else np.array([1, 1]) / np.sqrt(2)
             Q.append((dd * abs(tot.z), "#f2c230", True, "full")); DRAWN.add((("tot", "mirror"), trait, "N1_inf"))
     X = _totdose() if dose else None
@@ -725,8 +728,8 @@ def total_arrows(Q, trait, dose):
         r = X[X.trait == f"{trait}_x_{trait}"]
         if len(r):
             r = r.iloc[0]; held = r.P < .05 and r.loo_n > 0 and r.loo_held == r.loo_n
-            if r.q < .05 or held:
-                Q.append((np.array([1, 1]) / np.sqrt(2) * r.z, "#f2c230", bool(r.q < .05), "full")); DRAWN.add((("tot", "dose"), trait, "N1_inf"))
+            if r.q < .05 and held:   # Jon 2026-11-23: thick only (FDR < 5% and held in every LOO run)
+                Q.append((np.array([1, 1]) / np.sqrt(2) * r.z, "#f2c230", True, "full")); DRAWN.add((("tot", "dose"), trait, "N1_inf"))
 
 
 def schematic_dose(ax, trait):
@@ -751,7 +754,9 @@ def schematic_dose(ax, trait):
     # grey total-genes arrows removed (Jon 2026-11-23: "Just remove the gray arrows"); the term stays in the model and in panel a
     for st, col in (("LC", "#f28e2b"), ("HC", "#7b3294")):
         component(Q, trait, (st, "HC" if st == "LC" else "LC"), col, "full", [(d_("D4"), u, ("D4", st)), (a_("M4"), m, ("M4", st))],
-                  [])   # Jon 2026-11-23: 'Purple and Orange are meant to indicate an axis where there is CNV-TWAS convergence' -> diagonals only, no DEL/DUP arm fallback
+                  [(a_("armDEL"), (1, 0), ("armDEL", st)), (a_("armDUP"), (0, 1), ("armDUP", st))])
+    # Jon 2026-11-23 (hierarchy, same rule in the ConGA disorder figure): diagonal(s) first; only if no diagonal passes, the DEL / DUP arm
+    # (up - down of one dosage, CNV-TWAS convergence in one dosage) is drawn on its axis; an arm pointing against its usual direction = divergence
     component(Q, trait, ("HC",), "#1b7837", "arm", [(d_("doseOth"), u, ("doseOth", "HC")), (o_("cls:other:HC", "mirror"), m, ("mirOth", "HC"))],
               [(o_("cls:other:HC", "DEL"), (1, 0), ("othDEL", "HC")), (o_("cls:other:HC", "DUP"), (0, 1), ("othDUP", "HC"))])
     flush_arrows(ax, Q, L)
@@ -826,7 +831,12 @@ def pick_arrow(fetch, trait, strata, key=None):
     ok = [k for k in fam if vals[k] is not None and np.isfinite(vals[k][1])]
     q = dict(zip(ok, bh([vals[k][1] for k in ok]))) if ok else {}
     mine = [(vals[k], q[k], k) for k in ok if k[0] == trait and k[2] == strata[0]]
-    for sel, thick_ in (([m for m in mine if m[1] < .05], True), ([m for m in mine if m[0][1] < .05 and m[0][2]], False)):
+    # Jon 2026-11-23 (via ConGA): 'thick arrows should be locus robust' -> every arrow needs P < 0.05 held in all LOO runs; thick also FDR < 5%.
+    # GW2_ARROW_LOO=0 restores the earlier rule (thick = FDR < 5% alone)
+    rob = os.environ.get("GW2_ARROW_LOO", "1") == "1"   # Jon 2026-11-23: thick arrows must also stay P < 0.05 in every LOO run
+    # Jon 2026-11-23 (both papers): 'drop the thin arrows ... Thick arrows: FDR < 5% in either CNV-size stratum ... must also stay at P < 0.05
+    # in every LOO run.' Only the thick tier is drawn.
+    for sel, thick_ in (([m for m in mine if m[1] < .05 and (m[0][2] or not rob)], True),):
         if sel:
             v, _, k = max(sel, key=lambda m: abs(m[0][0]))
             if key is not None:
@@ -953,7 +963,9 @@ def fig3(dose=False):
                         # falls back to the DEL / DUP axis outlines the class tiles it comes from (arm = up - down of that dosage; or the
                         # weak-or-no-TWAS HC term itself)
                         sc = None
-                        if cls == "other" and st == "HC":   # green only: orange / purple never fall back to an axis (Jon 2026-11-23)
+                        if cls in ("up", "down"):   # orange / purple axis arrow (hierarchy rule) boxes its two TWAS tiles
+                            sc = ("#f28e2b" if st == "LC" else "#7b3294", (("arm" + dos, st), trait, size))
+                        elif cls == "other" and st == "HC":
                             sc = ("#1b7837", (("oth" + dos, "HC"), trait, size))
                         TA.add(ax, x0 + k, yy, 1, 1, s2term(trait, f"{size}~cls:{cls}:{st}", dos), tag(size, ("a", cls, dos)), sigcol=sc)
                 if S2VAR == "size2t":
@@ -1043,7 +1055,7 @@ def fig3(dose=False):
         lb[0] = "total (all genes: mirror = gene-level DEL vs DUP; dose-aligned = total genes, analytic t)"
     if dose:
         lb = ["total (all genes: mirror = gene-level DEL vs DUP; dose-aligned = total genes, analytic t)", "CNV–TWAS, LC genes (TWAS z > +3 and z < −3)",
-              "CNV–TWAS, HC genes (TWAS z > +3 and z < −3)", "weak or no TWAS, HC genes   (thick: FDR < 5%; thin: P < 0.05, locus-robust)"]
+              "CNV–TWAS, HC genes (TWAS z > +3 and z < −3)", "weak or no TWAS, HC genes   (arrows: FDR < 5% and P < 0.05 in every leave-one-locus-out run)"]
     if S2VAR == "size2t":   # grey component: total-genes term (ordinary gene) of the joint model
         pass   # no grey arrows, so no legend entry (Jon 2026-11-23)
     fig.legend(hs, lb, loc="lower center", ncol=2, frameon=False, fontsize=5.8, bbox_to_anchor=(.5, -.003))
