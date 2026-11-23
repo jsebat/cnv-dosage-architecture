@@ -1,0 +1,23 @@
+Group (in Figure 2A)	CHR	START	END	Locus name	Disorder Name	Locus type	URL for Clinical Reference
+Genome-wide significant loci	1	145627235	145809100	1q21.1_TAR_BP1_BP2		Recurrent CNV	
+Genome-wide significant loci	1	145823900	146040039	1q21.1_TAR_BP2_BP3	1q21.1 recurrent (TAR syndrome) region (proximal)	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-37428
+Genome-wide significant loci	15	22778537	23067754	15q11.2_BP1_BP2	15q11.2 recurrent region (BP1-BP2) (includes NIPA1)	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-37448
+Genome-wide significant loci	15	28917240	30083764	15q13.1-13.2_BP3_BP4	15q13 recurrent region (BP3-BP4) (includes APBA2)	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-46285
+Genome-wide significant loci	15	31724867	32170575	15q13.3_CHRNA7		Recurrent CNV	
+Genome-wide significant loci	16	15417798	16199832	16p13.11_BP1_BP2	16p13.11_BP1-BP2	Recurrent CNV	https://www.rarechromo.org/media/information/Chromosome%2016/16p13.11%20microdeletions%20FTNW.pdf
+Genome-wide significant loci	16	16900000	18050000	16p13.11_BP2_BP3	16p13.11_BP2-BP3	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-37415
+Genome-wide significant loci	16	21938814	22420568	16p12.2_BP2_BP3	16p12.2_BP2-BP3	Recurrent CNV	https://www.ncbi.nlm.nih.gov/books/NBK274565/
+Genome-wide significant loci	16	28471892	28590813	16p11.2_BP1_BP2	16p11.2_BP1-BP3	Recurrent CNV	https://www.ncbi.nlm.nih.gov/books/NBK11167/
+Genome-wide significant loci	16	28811875	29035462	16p11.2_BP2_BP3	16p11.2_BP2-BP3	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-37486
+Genome-wide significant loci	16	29639519	30189452	16p11.2_BP4_BP5	16p11.2 recurrent region (proximal BP4-BP5) (includes TBX6)	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-37400
+Genome-wide significant loci	22	19049819	20250000	22q11.21_A_B		Recurrent CNV	
+Genome-wide significant loci	22	20400000	20665000	22q11.21_B_C	22q11.21_B-C	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-37516
+Genome-wide significant loci	22	20750000	21112437	22q11.21_C_D	22q11.21_C-D	Recurrent CNV	
+Other Clinically-Reportable CNVs	22	21565838	22610000	22q11.21_D_E	22p11.21 (D-E)	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-37397
+Other Clinically-Reportable CNVs	22	22825000	23311459	22q11.21_E_F	22p11.21 (E-F)	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-37488
+Other Clinically-Reportable CNVs	22	23550000	23950000	22q11.21_F_G	22p11.21 (F-G)	Recurrent CNV	https://search.clinicalgenome.org/kb/gene-dosage/region/ISCA-46294
+Other Clinically-Reportable CNVs	22	24050000	24200000	22q11.21_G_H	22p11.21 (G-H)	Recurrent CNV	
+	15	30788442	31724867	15q13.3_BP4_BP5_exclCHRNA7			
+	16	21570000	21720000	16p12.2_BP1_BP2			
+	15	23067754	28145193	15q11.2-13.1_BP2_BP3			
+	16	29035462	29639519	16p11.2_BP3_BP4			
