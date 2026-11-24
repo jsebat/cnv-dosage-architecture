@@ -17,7 +17,7 @@ the commit message. Never write a second version of something that already exist
   is not in Molly's sheet, ask Jon. Do not add a local rule.
 
   The one exception is `alleles.py` / `cnv_gwas/replication/replicate_s9_alleles.R`. It is a port of Omar Shanta's PGC Table S9 allele
-  calls, used only to replicate that table.
+  calls, used only to replicate that table. Omar's rules stay for the Shanta (PGC) paper (Jon 2026-11-24).
 - **CNV → gene rules**: `incidence()` in `conga_axes_qt.py` (DEL: any exon; DUP: a whole transcript).
 - **Nulls**: genome shift of the gene annotation (`conga_grid_qt.py`, shared shifts in `resources/shared_shifts`), and the gene-circle
   shift for the gene mirror (`gene_mirror_qt.py`).
