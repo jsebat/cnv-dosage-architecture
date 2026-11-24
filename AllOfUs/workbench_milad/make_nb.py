@@ -27,7 +27,7 @@ import pandas as pd
 
 REPO_URL   = 'https://github.com/jsebat/cnv-dosage-architecture.git'   # Jon 2026-11-19: code moved here (same history)
 BRANCH     = 'main'
-PIN_COMMIT = '4b64136'         # Jon 2026-11-18: sex strata fix (numeric match). ce1ce67 _nosd fix (additivity rerun done). sv/prep/main(all,eur) c4e09df; gridjoint 05fa65b; burden/main_rest b97150f
+PIN_COMMIT = 'bdfcf29'         # Jon 2026-11-23: Fig. 3 joint model + gene-based association (HANDOFF_Milad_Fig3.md). Before: 4b64136 (Jon 2026-11-18: sex strata fix (numeric match). ce1ce67 _nosd fix (additivity rerun done). sv/prep/main(all,eur) c4e09df; gridjoint 05fa65b; burden/main_rest b97150f)
 
 HOME = os.path.expanduser('~')                 # /home/dataproc on the Spark app, /home/jupyter on a plain JupyterLab app
 REPO = f'{HOME}/repos/cnv-growth-bmi'
@@ -221,17 +221,22 @@ STAGES = {
     'additivity': '--steps additivity,scores --strata all',
     'gridjoint':  f'--steps grid,joint --strata all --jobs {GRID_JOBS}',
     'export':     '--steps export',
-    'burden_allcalls': 'py:burden_allcalls.py',    # arrays (Jon 2026-11-20): second burden version, single_def all_calls -> <stratum>/burden_all_calls/<trait>
+    'burden_allcalls': 'py:burden_allcalls.py',
+    # Fig. 3 of the dosage paper + gene-based association (Jon 2026-11-23, HANDOFF_Milad_Fig3.md; section 16). Always --strata all for fig3.
+    'fig3':         '--steps fig3 --strata all --jobs 5',      # 14 fits + 2 gene-mirror + 2 dose-bin runs + in-Workbench summaries
+    'fig3_export':  '--steps fig3_export --strata all',        # aggregate-only -> <run>/export_aggregate_fig3, log ends with AUDIT OK
+    'genes':        '--steps genes',                           # every stratum, both traits -> results/<stratum>/gene_assoc/<trait>
+    'genes_export': '--steps genes_export --strata all',       # aggregate-only -> <run>/export_aggregate_genes, log ends with AUDIT OK    # arrays (Jon 2026-11-20): second burden version, single_def all_calls -> <stratum>/burden_all_calls/<trait>
 }
 # Three datasets, each with its own run folder, filled config and bucket backup (stage markers live in <run>/stages):
 #   wgs      = default WGS run (B2)          nosegdup = WGS without the segdup GWAS filter (B6)          array = Molly's array calls (B5)
 DATASETS = {
     'wgs':      dict(run=RUN, cfg=CFG, backup=BACKUP_GS, tar='aou_sacks2026',
-                     stages=['sv', 'prep', 'burden', 'main_rest', 'sexstrata', 'additivity', 'gridjoint', 'export']),   # 'main' (FAILED at afr, c4e09df) superseded by burden/main_rest/sexstrata
+                     stages=['sv', 'prep', 'burden', 'main_rest', 'sexstrata', 'additivity', 'gridjoint', 'export', 'fig3', 'genes', 'fig3_export', 'genes_export']),   # 'main' (FAILED at afr, c4e09df) superseded by burden/main_rest/sexstrata
     'nosegdup': dict(run=os.path.expanduser('~/cnv_anthro_nosegdup'), cfg='configs/aou_sacks2026_nosegdup_filled.json',
                      backup=f'{BUCKET_GS}/run_backup_nosegdup', tar='aou_sacks2026_nosegdup', stages=['main', 'additivity', 'gridjoint', 'export']),
     'array':    dict(run=os.path.expanduser('~/cnv_anthro_array'), cfg='configs/aou_sacks2026_array_filled.json',
-                     backup=f'{BUCKET_GS}/run_backup_array', tar='aou_array_sacks2026', stages=['prep', 'main', 'burden_allcalls', 'additivity', 'gridjoint', 'export']),
+                     backup=f'{BUCKET_GS}/run_backup_array', tar='aou_array_sacks2026', stages=['prep', 'main', 'burden_allcalls', 'additivity', 'gridjoint', 'export', 'fig3', 'genes', 'fig3_export', 'genes_export']),
 }
 for D in DATASETS.values():
     for d in ['data', 'results', 'logs', 'stages']: os.makedirs(f"{D['run']}/{d}", exist_ok=True)
@@ -795,6 +800,143 @@ for ds, cnv_, ph_ in [('wgs', f"{DATASETS['wgs']['run']}/data/aou_srwgs_sv.cnv",
     res[ds] = pd.DataFrame(rows)
     print(f'\n=== {ds}: N = {len(G)} (people analysed); counts rounded to 10, 1-{MIN_CELL} masked; alleles_py = pipeline (all/height)')
     print(res[ds].to_string(index=False))
+""")
+
+md(r"""## 16. Fig. 3 joint model and gene-based association (Jon 2026-11-23, `AllOfUs/HANDOFF_Milad_Fig3.md`)
+WGS and array only (nosegdup reads the same CNV and phenotype tables as WGS, so it is not needed). Before this section:
+set `PIN_COMMIT = 'bdfcf29'` (section 1, done), rerun sections **1, 2, 4 and 6**, rerun section 7 (STAGES now has `fig3`, `fig3_export`,
+`genes`, `genes_export`), run section 8 once (for `mask()`), and rerun **only the config cell of section 14** (not its launch cell): both filled
+configs then carry the template's new `"fig3"` and `"genes"` blocks. Do not edit `designs/fig3_spec_2026-11-23.json`.
+
+Order: 16.1 check → 16.2 launch `fig3` then `genes` (WGS and array, two drivers) → 16.3 Fig. 3 QC (paste) → 16.4 gene QC (paste) →
+16.5 locus-carrier check (eight lines, paste) → 16.6a audit fix → 16.6 exports (`AUDIT OK`) → 16.7 package. Four tarballs; download them at least an hour apart.""")
+code(r"""
+# 16.1 what changed in the pipeline since the finished stages, and the two filled configs
+sh(f'cd {REPO} && git diff --stat 4b64136 bdfcf29 -- AllOfUs/cnv_anthro | tail -20')
+for ds in ['wgs', 'array']:
+    c_ = json.load(open(f"{CODE}/{DATASETS[ds]['cfg']}"))
+    assert c_.get('fig3') and c_.get('genes'), f"{ds}: no fig3/genes block -> rerun section 6 (wgs) / the section 14 config cell (array)"
+    shutil.copy(f"{CODE}/{DATASETS[ds]['cfg']}", f"{DATASETS[ds]['run']}/logs/config_used.json")
+    spec_ = json.load(open(f"{CODE}/{c_['fig3']['spec']}"))
+    print(ds, '| min_cell', c_['min_cell'], '| fig3 strata', c_['fig3']['strata'], '| spec', c_['fig3']['spec'], '| shifts sha1', spec_.get('perms_sha1'))
+for t in ['height', 'bmi']:
+    f_ = f'{ROOT}/resources/shared_shifts/{t}_gtex_nonbrain_all.npy'      # the config's ../resources, relative to cnv_anthro
+    print(t, 'shift list sha1', hashlib.sha1(open(f_, 'rb').read()).hexdigest()[:16], '(UKBB: height 157a247259f02719, bmi be761a32dd575298)')
+""")
+code(r"""
+# 16.2 launch. fig3 = several hours (WGS longer: ~57 calls per person); genes ~1 h. Two drivers ('' = wgs, 'ar' = array) run at once on the
+# 251 GB VM; if status() shows memory pressure, stop one, change '--jobs 5' to '--jobs 3' in STAGES['fig3'], rerun section 7 and relaunch
+# (finished fits, i.e. those with run_info.json, are skipped).
+launch(['fig3', 'genes'], tag='', ds='wgs')
+launch(['fig3', 'genes'], tag='ar', ds='array')
+""")
+code(r"""
+# 16.3 Fig. 3 QC (handoff section B): z, P and N only -> safe to paste. Set DS, run once per dataset after its fig3 stage is done.
+import numpy as np
+DS = 'wgs'
+assert 'mask' in globals(), 'run section 8 first (mask)'
+F3 = f"{DATASETS[DS]['run']}/results/all/fig3"
+print('=== Fig. 3 QC |', DS, '|', COMMIT)
+fi = json.load(open(f'{F3}/cnv_filter/run_info.json'))        # call set: nothing is dropped; per-position carrier frequency recorded
+print('call set: N', fi['N'], '| calls', fi['calls_in'], '(kept', fi['calls_out'], ') | highest per-position carrier frequency', fi['max_position_freq'])
+print('what a position filter WOULD drop (not applied):', json.dumps(mask({t: {d: v['calls_dropped'] for d, v in r.items()} for t, r in fi['report'].items()})))
+spec = json.load(open(f'{CODE}/designs/fig3_spec_2026-11-23.json'))
+for f in sorted(glob.glob(f'{F3}/*/grid/*/*/run_info.json')):
+    i = json.load(open(f)); t = i['trait'].replace('_rint', '')
+    print(os.path.relpath(os.path.dirname(f), F3), '| N', i['N'], '| nrep', i['nrep'], '| shifts',
+          'OK' if i['perms_sha1'] == spec['perms_sha1'][t] else 'MISMATCH', '| major loci', len(i['major_loci']))
+    o = pd.read_csv(f.replace('run_info.json', 'observed_terms.tsv'), sep='\t')
+    print('   (run, term) cells with 1-20 carriers, withheld at export:', int(pd.to_numeric(o.n_carriers_term, errors='coerce').between(1, 20).sum()),
+          'of', int(o.n_carriers_term.notna().sum()))
+for f in sorted(glob.glob(f'{F3}/uni_*/grid/*/univariate/grid_summary.tsv')):      # univariate DEL z / DUP z per class and CNV-size stratum
+    d = pd.read_csv(f, sep='\t'); d = d[~d.readout.str.endswith('|mirror')]
+    d['z'] = np.where(d.readout.str.contains('n_all'), d.t_analytic, d.z_emp)       # total genes: analytic t (its shift null is degenerate)
+    print('---', os.path.relpath(os.path.dirname(f), F3)); print(d[['readout', 'z', 'P_emp', 'loo_held', 'loo_n', 'noloci_z_emp']].round(3).to_string(index=False))
+for name in ['size2t_mirror', 'all2t_mirror', 'totdose']:
+    for tab in ['mirror4_cross_summary.tsv', 'dose_summary.tsv']:
+        p = f'{F3}/{name}/{tab}'
+        if os.path.exists(p) and os.path.getsize(p) > 5:
+            d = pd.read_csv(p, sep='\t'); d = d[d.stat.isin(['M4', 'armDEL', 'armDUP', 'D4', 'doseOth', 'doseTot', 'mirTot'])]
+            print('---', name, tab); print(d[['trait', 'size', 'stratum', 'stat', 'z', 'P', 'loo_held', 'loo_n', 'noloci_z']].round(3).to_string(index=False))
+for t in ['height', 'bmi']:
+    d = pd.read_csv(f'{F3}/gene_mirror/{t}/gene_mirror_summary.tsv', sep='\t')
+    print('--- gene mirror', t); print(d[['size', 'stratum', 'stat', 'obs', 'z', 'P', 'n_genes', 'loo_held', 'n_loo', 'noloci_z']].round(3).to_string(index=False))
+for t in ['height', 'bmi']:      # dose-response bins: already masked when written (bins with 1-20 people have no n and no estimate)
+    i = json.load(open(f'{F3}/dose_bins/{t}/run_info.json')); d = pd.read_csv(f'{F3}/dose_bins/{t}/fig3_dose_bins.tsv', sep='\t')
+    d = d[(d.run == 'full') & (d.side != 'none')]; est = d.beta.notna()
+    print('--- dose bins', t, '| N', i['N'], '| single-dosage or non-carriers', i['full_N_single'], '| bins with an estimate', int(est.sum()), 'of', len(d),
+          '| withheld', int((d.n.astype(str) == '<=20').sum()), '| empty', int((d.n.astype(str) == '0').sum()))
+    print(d[est & (d.partition == 'uni')].groupby(['size', 'cls', 'side']).size().unstack('side').to_string())
+""")
+code(r"""
+# 16.4 gene-based association QC (handoff section E): N, numbers of genes and test statistics only -> safe to paste. Never open gene_assoc.tsv.gz itself.
+DS = 'wgs'
+R = f"{DATASETS[DS]['run']}/results"
+print('=== gene QC |', DS)
+for f in sorted(glob.glob(f'{R}/*/gene_assoc*/*/gene_assoc.tsv.gz')):
+    d = pd.read_csv(f, sep='\t'); st, t = f.split('/')[-4] + ' ' + f.split('/')[-3], f.split('/')[-2]; d = d[d.n_carriers >= 21]
+    for dos in ['DEL', 'DUP']:
+        x = d[d.dosage == dos]
+        print(st, t, dos, '| N', int(x.N.iloc[0]) if len(x) else 0, '| genes with >= 21 carriers', len(x),
+              '| lambda', round(float((x.t ** 2).median() / 0.4549), 2) if len(x) else None, '| genes with P < 2.5e-6:', int((x.P < 2.5e-6).sum()))
+""")
+code(r"""
+# 16.5 locus carriers at 1q21.1 and 22q11.21 (handoff section F): people, 1-20 masked -> the eight lines for Jon. Do not change the locus rule.
+sys.path.insert(0, CODE)
+from common import read_plink_cnv
+from conga_axes_qt import assign_loci
+X = lambda v: os.path.expandvars(v)
+loci = pd.read_csv(f'{CODE}/../resources/growth_loci/loci_sacks34.tsv', sep='\t')
+for DS in ['wgs', 'array']:
+    cfg_ = json.load(open(f"{DATASETS[DS]['run']}/logs/config_used.json"))
+    ids = pd.read_csv(X(cfg_['pheno_table']), sep='\t', usecols=['IID'], dtype=str).IID
+    c = read_plink_cnv(X(cfg_['cnv_table']), keep_iids=ids); c = c[c.CHR <= 22].reset_index(drop=True)
+    c['locus'] = assign_loci(c, loci)
+    for name, ch, a, b, fam in [('1q21.1 distal', 1, 147056425, 147922330, ['1q21_1']),
+                                ('22q11.21 A-D', 22, 19049819, 21112437, ['22q11_21_A_D', '22q11_21_A_B', '22q11_21_B_D', '22q11_21_B_C', '22q11_21_C_D'])]:
+        for typ, tn in [(1, 'DEL'), (3, 'DUP')]:
+            d = c[(c.CHR == ch) & (c.TYPE == typ) & (c.BP2 > a) & (c.BP1 < b)].copy()
+            d['cov'] = (d.BP2.clip(upper=b) - d.BP1.clip(lower=a)) / (b - a)
+            assigned = set(d[d.locus.isin(fam)].IID); cover50 = set(d[d['cov'] >= .5].IID); any10 = set(d[d['cov'] >= .1].IID)
+            print(DS, '|', name, tn, '| assigned by the 50% reciprocal rule:', mask(len(assigned)), '| one call covers >= 50% of the locus:', mask(len(cover50)),
+                  '| of those not assigned:', mask(len(cover50 - assigned)), '| any call covering >= 10%, not assigned:', mask(len(any10 - assigned)))
+""")
+code(r"""
+# 16.6a fix the export audit of run_fig3.py at bdfcf29 (2026-11-24): in audit(), the fig3_dose_bins.tsv branch assigned the table to `d`,
+# the os.walk folder variable, so the next file of dose_bins/<trait>/ crashed (TypeError: ... not DataFrame) after the export was written
+# but before the audit and EXPORT_MANIFEST.txt. Rename only; no rule changes. No-op once fixed upstream. Rerunning section 2 stashes it.
+p_ = f'{CODE}/run_fig3.py'; s_ = open(p_).read()
+old_ = ('d = pd.read_csv(p, sep="\t"); n = pd.to_numeric(d.n, errors="coerce")\n'
+        '                if n.between(1, k).any() or (d.run.ne("full") & n.notna() & d.side.ne("none")).any():')
+new_ = ('db_ = pd.read_csv(p, sep="\t"); n = pd.to_numeric(db_.n, errors="coerce")\n'
+        '                if n.between(1, k).any() or (db_.run.ne("full") & n.notna() & db_.side.ne("none")).any():')
+if old_ in s_:
+    open(p_, 'w').write(s_.replace(old_, new_)); print('patched run_fig3.py audit()')
+else:
+    print('nothing to patch' if new_ in s_ or 'd = pd.read_csv(p, sep="\t"); n = pd.to_numeric(d.n' not in s_ else 'PATTERN CHANGED: check run_fig3.py audit()')
+sh(f'cd {REPO} && git diff --stat', check=False)
+# an export that crashed before its audit leaves an unaudited folder: move it aside (never download it)
+for ds in ['wgs', 'array']:
+    D = DATASETS[ds]['run']
+    if os.path.exists(f'{D}/export_aggregate_fig3') and not glob.glob(f'{D}/export_aggregate_fig3/*/fig3/EXPORT_MANIFEST.txt'):
+        sh(f'mv {D}/export_aggregate_fig3 {D}/export_aggregate_fig3_noaudit_{time.strftime("%Y%m%d_%H%M")}')
+""")
+code(r"""
+# 16.6 exports, after 16.3 and 16.4 look fine. Each export refuses to overwrite an existing folder (move it away to redo).
+launch(['fig3_export', 'genes_export'], tag='', ds='wgs')
+launch(['fig3_export', 'genes_export'], tag='ar', ds='array')
+""")
+code(r"""
+# 16.7 audit lines and packaging (set DS). Then download each .tar.gz + .sha256 (one tarball per hour at most) and scp to
+# the shared results folder at UCSD
+DS = 'wgs'
+DRUN = DATASETS[DS]['run']
+for kind, man in [('fig3', 'export_aggregate_fig3/all/fig3/EXPORT_MANIFEST.txt'), ('genes', 'export_aggregate_genes/EXPORT_MANIFEST.txt')]:
+    last = open(f'{DRUN}/logs/{kind}_export.log').read().strip().splitlines()[-3:]
+    assert any('AUDIT OK' in l for l in last), f'{kind}_export.log does not end with AUDIT OK: {last}'
+    T = f"{DATASETS[DS]['tar']}_{kind}_export_{time.strftime('%Y%m%d')}.tar.gz"
+    sh(f"head -3 {DRUN}/{man}")
+    sh(f'cd {DRUN} && tar czf {T} export_aggregate_{kind} && sha256sum {T} > {T}.sha256 && ls -la {T}* && gsutil cp {T} {T}.sha256 {BUCKET_GS}/')
 """)
 
 nb = {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
