@@ -27,6 +27,8 @@ Outputs: --out genotype matrix (participant level: keep inside the Workbench) an
 DEL/DUP carrier counts with 1..min_cell masked (aggregate; safe to export).
 """
 import argparse
+import os
+import re
 import numpy as np
 import pandas as pd
 
@@ -109,6 +111,74 @@ def counts(G, min_cell):
         m = lambda n: f"<={min_cell}" if 1 <= n <= min_cell else n
         rows.append(dict(locus=col, n_DEL=m(nd), n_DUP=m(nu), N=len(G)))
     return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Pipeline API (Jon 2026-11-24: "Milad's claude is ignoring our recurrent cnv genotyping code and constantly reinventing
+# the wheel"). Every step of AllOfUs/cnv_anthro and cnv_gwas/cnv_anthro that needs recurrent-CNV carriers (Fig. 3 / grid /
+# joint locus-removal runs, growth-locus effects, asymmetric-interval strata, additivity exclusions) calls these functions.
+# There is no second genotyper: do not add overlap rules for recurrent loci anywhere else.
+# null model: n/a (genotyping only).
+# ---------------------------------------------------------------------------------------------------------------------
+HERE = os.path.dirname(os.path.abspath(__file__))
+SHEET_RECIPROCAL = os.path.join(HERE, "recurrentCNV_hg38.reciprocal.tsv")
+SHEET_ONEWAY = os.path.join(HERE, "recurrentCNV_hg38.oneway.tsv")
+CODE = {"DEL": 1, "DUP": 3}
+
+
+def locus_id(name):
+    """Locus name in any of the repo's spellings -> one id ('22q11.21_A-D', '22q11.21_A_D' -> '22q11_21_A_D')."""
+    return re.sub(r"[.\-]", "_", str(name))
+
+
+def genotype_calls(cnv):
+    """Genotype matrix for every person with a call: IID x allele (columns = locus_id of Molly's allele names),
+    codes 1 = DEL, 2 = none, 3 = DUP. cnv: PLINK-CNV DataFrame (IID CHR BP1 BP2 TYPE; TYPE 1/3), in file order."""
+    c = cnv[["IID", "CHR", "BP1", "BP2", "TYPE"]].copy()
+    c["CHR"] = pd.to_numeric(c.CHR.astype(str).str.replace("chr", "", regex=False), errors="coerce")
+    c = c.dropna(subset=["CHR"]).astype({"CHR": int, "BP1": np.int64, "BP2": np.int64, "TYPE": int})
+    G = genotype(c, list(pd.unique(c.IID)), read_loci(SHEET_RECIPROCAL), read_loci(SHEET_ONEWAY))
+    G = G[[x for x in G.columns if not x.endswith("_oneway")]]
+    G.columns = [locus_id(x) for x in G.columns]
+    if G.columns.duplicated().any():
+        raise ValueError(f"duplicate allele ids: {list(G.columns[G.columns.duplicated()])}")
+    return G
+
+
+def _col(G, name):
+    k = locus_id(name)
+    if k not in G.columns:
+        raise KeyError(f"{name}: not an allele of Molly's recurrent CNV sheet ({len(G.columns)} alleles: {', '.join(G.columns)})")
+    return G[k]
+
+
+def carriers(G, names, dosage="both"):
+    """Set of IIDs carrying any of the named alleles; dosage 'DEL', 'DUP' or 'both'."""
+    codes = [1, 3] if dosage == "both" else [CODE[dosage]]
+    out = set()
+    for n in ([names] if isinstance(names, str) else names):
+        g = _col(G, n)
+        out |= set(g.index[g.isin(codes)])
+    return out
+
+
+def label_calls(cnv, loci, G=None):
+    """Per-call locus label (array of loci.id, '' = none). loci: table with id, dosage, chr, start, end[, match]
+    (resources/growth_loci/loci_sacks34*.tsv). A call gets recurrent locus L when its person carries L's allele with the
+    call's dosage in Molly's genotypes and the call overlaps L (so every piece of a fragmented call is labelled).
+    Rows with match == 'gene' (UKBB CNV-GWAS loci, not recurrent CNVs) keep their rule: any overlap of the same dosage.
+    The first matching row of the table wins."""
+    if G is None:
+        G = genotype_calls(cnv)
+    lab = np.array([""] * len(cnv), dtype=object)
+    iid = cnv.IID.to_numpy(); ch = cnv.CHR.to_numpy(); a = cnv.BP1.to_numpy(); b = cnv.BP2.to_numpy()
+    dos = np.where(cnv.TYPE.to_numpy() < 2, "DEL", "DUP")
+    for L in loci.itertuples():
+        m = (dos == L.dosage) & (ch == int(L.chr)) & (a <= L.end) & (b >= L.start) & (lab == "")
+        if getattr(L, "match", "segment") != "gene":
+            m &= np.isin(iid, list(carriers(G, L.id, L.dosage)))
+        lab[m] = L.id
+    return lab
 
 
 def main():

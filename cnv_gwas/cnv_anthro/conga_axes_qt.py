@@ -26,7 +26,7 @@ import time
 import numpy as np
 import pandas as pd
 from scipy import sparse, stats
-from common import read_plink_cnv, design_matrix
+from common import read_plink_cnv, design_matrix, rcg
 
 SHET_CUT = 0.0290
 Z_CUT = 3.0
@@ -80,24 +80,9 @@ def incidence(calls, feats, mode, n_rows, n_genes):
 
 # ---------------------------------------------------------------- loci for LOO (port of assign_loci.awk)
 def assign_loci(cnv, loci):
-    """Each call -> best locus of its own dosage: segmental = reciprocal overlap >= 50% (score = smaller fraction, inclusive
-    coordinates); gene loci = any overlap, score 0.5; strictly better score wins, ties go to the first table row."""
-    best = np.zeros(len(cnv)); lab = np.array([""] * len(cnv), dtype=object)
-    d = np.where(cnv.TYPE.to_numpy() < 2, "DEL", "DUP")
-    a = cnv.BP1.to_numpy(); b = cnv.BP2.to_numpy(); ch = cnv.CHR.to_numpy()
-    for L in loci.itertuples():
-        m = (d == L.dosage) & (ch == int(L.chr)) & (a <= L.end) & (b >= L.start)
-        if not m.any():
-            continue
-        if L.match == "gene":
-            sc = np.full(m.sum(), 0.5)
-        else:
-            ov = np.minimum(b[m], L.end) - np.maximum(a[m], L.start) + 1
-            sc = np.minimum(ov / (b[m] - a[m] + 1), ov / (L.end - L.start + 1))
-        idx = np.flatnonzero(m)
-        up = (sc >= 0.5) & (sc > best[idx])
-        best[idx[up]] = sc[up]; lab[idx[up]] = L.id
-    return lab
+    """Per-call locus label for the locus-removal runs. Carriers come from Molly's recurrent CNV genotyping
+    (recurrentCNVgenotyping/aou, rcg.label_calls); this module has no overlap rule of its own (Jon 2026-11-24)."""
+    return rcg.label_calls(cnv, loci)
 
 
 # ---------------------------------------------------------------- TWAS

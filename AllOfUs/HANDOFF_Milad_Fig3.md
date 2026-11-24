@@ -1,5 +1,36 @@
 # Sacks 2026 in All of Us: Fig. 3 joint model (handoff for Milad, 2026-11-23)
 
+## Update 2026-11-24: one recurrent-CNV genotyper (rerun needed)
+
+**Recurrent-CNV carriers now come only from Molly's genotyping**, i.e. your port in `recurrentCNVgenotyping/aou/recurrent_cnv_genotyping_aou.py`
+(her sheet; reciprocal and one-way rules; segment patterns). Jon: "our recurrent cnv genotyping code" is the one to use; nothing else may
+genotype recurrent CNVs. The pipeline's own overlap rules are gone:
+
+- `assign_loci` (`conga_axes_qt.py`) now calls `rcg.label_calls`. A call gets a locus when its person carries that allele in Molly's
+  genotypes and the call overlaps the locus, so every piece of a fragmented call is removed with it. This changes every locus-removal run
+  (LOO, `minor_all`, `no_loci`) in `fig3`, `grid`, `joint`, `axes`, and the `no_loci` bins.
+- `locus_effects.py` (`loci` step): the 34 recurrent loci (`recip50` rows) take carriers from Molly's genotypes; the 26 UKBB CNV-GWAS loci
+  (`cover50`) are unchanged.
+- `dup_burden.py`, `make_union_strata.py`, `additivity_constraint.py` (`--exclude_loci`, `--ref_exclude_loci`): carriers of the 13
+  asymmetric / 34 Sacks intervals from Molly's genotypes.
+- Not affected: the probe-level CNV GWAS, the gene-based association, alleles (`alleles.py` is the port of Omar's PGC Table S9 calls and
+  stays as it is), frequency filters.
+- `common.py` imports the genotyper as `rcg` from `../../recurrentCNVgenotyping/aou` (or `$RCG_DIR`). Keep the whole repo checkout.
+- Section F and open point 0 below are settled by this: no rule choice is left.
+- Also fixed: the `audit()` bug you found in `run_fig3.py` (`db_` instead of `d`), as you patched it.
+
+**What to rerun (WGS and arrays).** Pin the new commit of `main`. The fit steps skip folders that are already done, so rerun into a new
+results folder: copy each config, set `"results_dir"` to a new path (e.g. `${HOME}/cnv_anthro_run/results_rcg_20261124`, and
+`..._array/results_rcg_20261124`), then
+
+```
+python run_pipeline.py --config <new config> --steps loci,grid,joint,additivity,burden   # every stratum, as before
+python run_fig3.py     --config <new config> --steps fit,summary                       # then fig3_export as in section C
+```
+
+Export both as in sections C and the main handoff; the meta-analysis takes only exports from this commit. UK Biobank is being rerun with
+the same code at UCSD.
+
 This adds one analysis to the run you already finished: the joint model behind the new Fig. 3 of the dosage-architecture paper.
 It reuses your CNV and phenotype tables, your resources bundle and your notebook's `launch()` / `status()`. Nothing you ran before is
 rerun or changed. The earlier handoff (`HANDOFF_Milad.md`) still holds for everything else.
@@ -61,10 +92,8 @@ with all minor loci removed (`minor_all`) and with all 34 recurrent intervals re
 The gene mirror uses a gene-circle shift (10,000 shifts, fixed seed, so the offsets are the same in every cohort). Total-genes terms do not
 depend on the annotation and are tested by their analytic t.
 
-**Locus carriers.** The locus removals use the same assignment as your grid and joint runs (`assign_loci` in `conga_axes_qt.py`,
-`resources/growth_loci/loci_sacks34.tsv`: a call is assigned to a locus of its own dosage at ≥ 50% reciprocal overlap). This is what UK
-Biobank used for Fig. 3, so the two cohorts match. If you genotyped recurrent CNVs another way for any step (for example with
-`recurrentCNVgenotyping/GenotypeRecurrentCNVs_tutorial.ipynb`), tell Jon: nothing here reads those genotypes.
+**Locus carriers.** The locus removals use Molly's recurrent CNV genotyping (`recurrentCNVgenotyping/aou`, through `assign_loci` →
+`rcg.label_calls`; see the 2026-11-24 update at the top). UK Biobank uses the same code, so the two cohorts match.
 
 ## A. Run (WGS dataset)
 
@@ -252,7 +281,7 @@ sh(f'cd {DRUN} && tar czf {T} export_aggregate_genes && sha256sum {T} > {T}.sha2
 Files to send: `aou_sacks2026_genes_export_<date>.tar.gz` and `aou_array_sacks2026_genes_export_<date>.tar.gz`, each with its `.sha256`.
 The nosegdup dataset does not need this run (same CNV and phenotype tables as WGS).
 
-## F. Locus carriers at 1q21.1 and 22q11.21: one check for Jon
+## F. Locus carriers at 1q21.1 and 22q11.21 (superseded 2026-11-24: carriers now come from Molly's genotyping)
 
 The locus-removal runs of Fig. 3 assign a call to a locus at ≥ 50% reciprocal overlap (`assign_loci`). Your notes say WGS calls at 1q21.1
 distal are larger than the locus, and array calls at 22q11.21 are fragmented, so some carriers may not be assigned and would stay in the
@@ -300,8 +329,7 @@ instead. Do not change the rule yourself: UK Biobank used `assign_loci`.
 
 ## Open points (Jon decides)
 
-0. **Locus carriers in the locus-removal runs** (section F): keep the 50% reciprocal rule of UK Biobank, or use Milad's port of the recurrent
-   CNV genotyping in All of Us. Pending the counts of section F.
+0. **Locus carriers: decided** (Jon 2026-11-24). Molly's recurrent CNV genotyping in every cohort and every step; no other genotyper.
 
 1. **Call set: decided.** PGC freeze filters in every cohort, no rarer cut (Jon 2026-11-23). An optional position-frequency filter exists
    in the code but is off; do not switch it on.

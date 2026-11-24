@@ -304,7 +304,7 @@ python run_pipeline.py --config $C --steps export
 `make_union_strata.py` builds the carrier subsets from AoU's own calls:
 - **noUnionDUP:** no duplication of a "union" gene (top-5% s_het or ClinGen haploinsufficient);
 - **noUnionAny:** no CNV of a union gene;
-- **noAsym13:** no CNV matching one of the 13 asymmetric intervals at 50% reciprocal overlap;
+- **noAsym13:** no carrier of the 13 asymmetric intervals (Molly's recurrent CNV genotyping; 50% reciprocal overlap before 2026-11-24);
 - **noUnionDUP_noAsym13:** both of the first and third.
 
 A missing shift file stops the run (`require_shared_shifts`). That is deliberate: AoU's own shifts cannot be meta-analysed replicate by replicate.

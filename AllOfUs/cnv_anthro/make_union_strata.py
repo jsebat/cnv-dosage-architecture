@@ -9,7 +9,7 @@ and union_strata_info.json (counts only).
 """
 import argparse, json, os
 import numpy as np, pandas as pd
-from common import read_plink_cnv
+from common import read_plink_cnv, rcg
 from conga_axes_qt import load_genes, incidence
 
 
@@ -38,12 +38,9 @@ def main():
     # S0 (Jon 2026-11-15): all people, union presence per arm as fixed person-level covariates (observed annotation, same in every null replicate)
     p0 = ph.copy(); p0["unionDEL"] = hDEL.astype(float); p0["unionDUP"] = hDUP.astype(float)
     p0.to_csv(os.path.join(a.out, "pheno_withUnionCov.tsv"), sep="\t", index=False)
-    if a.asym_loci:   # S2/S3: carriers of Molly's asymmetric intervals (50% reciprocal overlap, either dosage), as in dup_burden.py
+    if a.asym_loci:   # S2/S3: carriers of Molly's asymmetric intervals (either dosage; Molly's recurrent CNV genotyping), as in dup_burden.py
         asym = set()
-        for l in pd.read_csv(a.asym_loci, sep="\t").itertuples():
-            c_ = cnv[(cnv.CHR == l.CHR) & (cnv.BP2 >= l.START) & (cnv.BP1 <= l.END)]
-            ov = (np.minimum(c_.BP2, l.END) - np.maximum(c_.BP1, l.START)).clip(lower=0)
-            asym |= set(c_.IID[(ov >= .5 * (l.END - l.START)) & (ov >= .5 * (c_.BP2 - c_.BP1))])
+        asym = rcg.carriers(rcg.genotype_calls(cnv), pd.read_csv(a.asym_loci, sep="\t").NAME, "both")   # Molly's genotyping (Jon 2026-11-24)
         am = ph.IID.isin(asym).to_numpy()
         ph[~am].to_csv(os.path.join(a.out, "pheno_noAsym13.tsv"), sep="\t", index=False)
         ph[~am & ~hDUP].to_csv(os.path.join(a.out, "pheno_noUnionDUP_noAsym13.tsv"), sep="\t", index=False)

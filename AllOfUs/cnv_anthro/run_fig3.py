@@ -170,8 +170,8 @@ def audit(root, k):
                 if n.between(1, k).any():
                     bad.append(f"count 1..{k} in {p}")
             if f == "fig3_dose_bins.tsv" and k > 0:
-                d = pd.read_csv(p, sep="	"); n = pd.to_numeric(d.n, errors="coerce")
-                if n.between(1, k).any() or (d.run.ne("full") & n.notna() & d.side.ne("none")).any():
+                db_ = pd.read_csv(p, sep="	"); n = pd.to_numeric(db_.n, errors="coerce")   # db_, not d: d is the os.walk folder (Milad 2026-11-24)
+                if n.between(1, k).any() or (db_.run.ne("full") & n.notna() & db_.side.ne("none")).any():
                     bad.append(f"small or no_loci bin counts in {p}")
             if f == "position_freq.tsv.gz" and k > 0 and pd.read_csv(p, sep="\t").n_carriers.between(1, k).any():
                 bad.append(f"position counts 1..{k} in {p}")
