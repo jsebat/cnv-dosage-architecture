@@ -23,6 +23,13 @@ The folder also holds the code that meta-analyses the two cohorts and redraws th
 - Univariate tests and dose-response bins of every Fig. 3 stratum: spec fits `uni_*`, `cnv_anthro/fig3_dose_bins.py`; figure key `B`.
 - Gene-based association (2026-11-23): `cnv_anthro/gene_assoc_qt.py` (`run_pipeline.py --steps genes,genes_export`),
   `cnv_anthro/export_gene_assoc.py`, `meta/meta_gene_assoc.py`.
+- Carrier minimum of the GWAS steps (Jon 2026-11-23): 21 carriers per probe (`gwas.min_ncnv`) sets the probe KEEP flag (probes with
+  fewer carriers are still tested). It is a per-cohort config value, for the GWAS only (the gene mirror keeps its own rule).
+- Export rule since 2026-11-25 (Jon: "Don't exclude gene based association p-values of any kind. but we should be careful with raw counts
+  data"): every probe and gene row is exported with t and P; rows with 1-20 carriers withhold the count, beta, SE and frequency
+  (`export_aggregate.py`, `export_gene_assoc.py`; `genes.min_carriers` is now 1). Gene classes PLOF (rare pLoF SNV) and LOF (DEL or pLoF
+  SNV) come from `gene_assoc_qt.py --plof` with `cnv_anthro/plof_carriers_aou.py`; `meta_gene_assoc.py` adds a sample-size-weighted Z
+  (`P_z_N`) that uses rows with withheld beta/SE. Handoff: `HANDOFF_Milad_LoF_export.md`.
 - Milad's Workbench notebook and notes: `workbench_milad/`; his All of Us port of the recurrent CNV genotyping: `../recurrentCNVgenotyping/aou/`.
 
 | folder | what it holds | where it runs |

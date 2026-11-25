@@ -16,6 +16,10 @@ dataset inside the gene's exon span (Jon: "Just record probe level frequency"); 
 Rows: every gene with >= --min_carriers carriers of that dosage (default 1: all counts stay inside the cohort so that the exporter can apply the
 small-cell rule across strata, and so that a supplement at a lower floor can still be made from the full table; export_gene_assoc.py keeps
 genes with >= 21 carriers, the floor of every cohort (Jon 2026-11-23), and above the small-cell limit).
+Optional --plof (Jon 2026-11-25: "With gene based data, LOF SNVs of cpz would be reportable. So combining snvs and dels should also be
+reportable"): a person-level table of rare pLoF SNV/indel carriers (columns IID and entrez or symbol; built inside the cohort, e.g. by
+plof_carriers_aou.py) adds two classes per gene: PLOF = carries a pLoF SNV; LOF = carries a pLoF SNV OR an exonic deletion (union, 0/1).
+LOF rows carry n_overlap (people with both), used only by the exporter's cross-class rule and never exported.
 null model: none (analytic OLS; a single-gene test has no gene annotation to shift).
 Output (aggregate): gene_assoc.tsv.gz, run_info.json. The small-cell rule is applied at export (export_gene_assoc.py), not here.
   python gene_assoc_qt.py --pheno ... --trait height_rint --cnv ... --twas ... --exons ... --gene_cov ... [--segdup_bed ...] --out DIR
@@ -25,10 +29,25 @@ import json
 import os
 import numpy as np
 import pandas as pd
-from scipy import stats
+from scipy import sparse, stats
 from common import read_plink_cnv, design_matrix
 from conga_axes_qt import load_genes, incidence, twas_gene_z, SHET_CUT
 from conga_grid_qt import segdup_fraction
+
+
+def plof_matrix(path, iids, U, n_rows, n_genes):
+    """Sparse person x gene 0/1 of pLoF SNV carriers from a table with IID and entrez (preferred) or symbol; people not in the analysis and
+    genes not in the exon annotation are ignored."""
+    p = pd.read_csv(path, sep="\t", dtype=str)
+    rows = pd.Series(np.arange(len(iids)), index=pd.Index(iids.astype(str)))
+    if "entrez" in p.columns:
+        gi = dict(zip(U.entrez.astype(str), U.gidx)); g = p.entrez.map(gi)
+    else:
+        gi = dict(zip(U.symbol, U.gidx)); g = p.symbol.map(gi)
+    r = p.IID.map(rows); ok = g.notna() & r.notna()
+    M = sparse.csr_matrix((np.ones(int(ok.sum())), (r[ok].astype(int), g[ok].astype(int))), shape=(n_rows, n_genes))
+    M.data[:] = 1.0
+    return M
 
 
 def main():
@@ -39,6 +58,7 @@ def main():
     ap.add_argument("--pos_freq", default="", help="position_freq.tsv.gz of cnv_freq_filter.py (dataset-level per-position carrier frequency)")
     ap.add_argument("--numeric", default="age,age2,PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10"); ap.add_argument("--factors", default="sex,batch")
     ap.add_argument("--cnv_filter", default="", help="label of the call filter applied to --cnv (recorded in run_info.json)")
+    ap.add_argument("--plof", default="", help="person-level rare pLoF SNV carriers: IID + entrez or symbol (adds PLOF and LOF = DEL or PLOF)")
     ap.add_argument("--min_carriers", type=int, default=1); ap.add_argument("--cohort", default="UKBB"); ap.add_argument("--stratum", default="all")
     ap.add_argument("--out", required=True)
     a = ap.parse_args(); os.makedirs(a.out, exist_ok=True)
@@ -72,8 +92,15 @@ def main():
                 if hi > lo:
                     j = lo + int(np.argmax(n[lo:hi])); mn[g] = n[j]; mf[g] = fr[j]
         return mn, mf
-    for dos, typ, feats, mode in (("DEL", 1, ex, "overlap"), ("DUP", 3, tx, "within")):
-        G = incidence(cnv[cnv.TYPE == typ], feats, mode, N, M)
+    classes = [("DEL", incidence(cnv[cnv.TYPE == 1], ex, "overlap", N, M)), ("DUP", incidence(cnv[cnv.TYPE == 3], tx, "within", N, M))]
+    overlap = None; plof_info = None
+    if a.plof:
+        P = plof_matrix(a.plof, ph.IID, U, N, M)
+        Gd = classes[0][1]; L = Gd + P; L.data[:] = 1.0
+        overlap = np.asarray(Gd.multiply(P).sum(0)).ravel()
+        classes += [("PLOF", P), ("LOF", L.tocsr())]
+        plof_info = dict(plof_table=os.path.basename(a.plof), plof_carrier_gene_pairs=int(P.nnz), plof_genes=int((np.asarray(P.sum(0)).ravel() > 0).sum()))
+    for dos, G in classes:
         n = np.asarray(G.sum(0)).ravel(); xr = np.asarray(G.T @ r).ravel(); QtX = np.asarray(G.T @ Q)
         v = n - (QtX ** 2).sum(1)                                   # residual sum of squares of the indicator on the covariates
         with np.errstate(invalid="ignore", divide="ignore"):
@@ -82,7 +109,9 @@ def main():
         d = ann[ok].copy(); d.insert(2, "dosage", dos)
         d["N"] = N; d["n_carriers"] = n[ok].astype(int); d["freq"] = n[ok] / N
         d["beta"] = beta[ok]; d["SE"] = se[ok]; d["t"] = t[ok]; d["P"] = 2 * stats.t.sf(np.abs(t[ok]), df)
-        mn, mf = max_pos(dos); d["max_pos_freq"] = mf[ok]; d["max_pos_n"] = mn[ok]
+        mn, mf = max_pos(dos if dos in ("DEL", "DUP") else "DEL"); d["max_pos_freq"] = mf[ok]; d["max_pos_n"] = mn[ok]
+        if overlap is not None:
+            d["n_overlap"] = overlap[ok].astype(int) if dos == "LOF" else np.nan
         out.append(d)
     R = pd.concat(out, ignore_index=True)
     R.insert(0, "trait", a.trait); R.insert(0, "stratum", a.stratum); R.insert(0, "cohort", a.cohort)
@@ -92,6 +121,8 @@ def main():
                 test="OLS, trait ~ covariates + carrier indicator; DEL = any exon overlap >= 1 bp, DUP = full-length transcript inside the call",
                 segdup_bed=os.path.basename(a.segdup_bed) if a.segdup_bed else None, cnv_table=os.path.basename(a.cnv),
                 cnv_filter=a.cnv_filter or "none (every call of the cohort's CNV table)")
+    if plof_info:
+        info.update(plof_info, rows_PLOF=int((R.dosage == "PLOF").sum()), rows_LOF=int((R.dosage == "LOF").sum()))
     json.dump(info, open(os.path.join(a.out, "run_info.json"), "w"), indent=1)
     lam = np.median(R.t ** 2) / stats.chi2.ppf(.5, 1) if len(R) else np.nan
     print(json.dumps(info)); print(f"lambda (median t^2): {lam:.3f}; smallest P: {R.P.min() if len(R) else float('nan'):.3g}")

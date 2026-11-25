@@ -8,6 +8,10 @@ eur + afr + ...), if for a row key (probe / allele / locus x dosage) any child s
 (all - sum of children, e.g. participants without an ancestry call) has 1..min_cell carriers, that row is suppressed in
 every child stratum of the partition (the parent row follows the primary rule only). Then no small count can be
 recovered by subtraction across exported tables.
+Per-probe association tables (sumstats_*, lead_*; Jon 2026-11-25: "export all probe level p-values so we can make plots regardless of raw
+counts"): a withheld probe row is KEPT with its test statistic T and P (the signed T gives the direction); only the count, BETA, SE and FREQ
+are withheld. T and P alone do not give the count back; BETA with SE would (SE ~ 1/sqrt(n)). --drop_small_probe_rows restores the old
+behaviour (withheld probe rows left out).
 Person-level files (*genotype*, pheno, .cnv) are never copied. Null-replicate arrays (.npz, test statistics only) are
 copied as float32.
 """
@@ -61,8 +65,8 @@ def main():
     ap.add_argument("--results", required=True); ap.add_argument("--export", required=True)
     ap.add_argument("--min_cell", type=int, default=20)
     ap.add_argument("--strata", default="", help="comma list of stratum folders under --results (stratified runs)")
-    ap.add_argument("--keep_small_probe_rows", action="store_true",
-                    help="keep withheld rows in per-probe sumstats (default: drop them; they carry no information and inflate egress size)")
+    ap.add_argument("--drop_small_probe_rows", action="store_true",
+                    help="leave withheld probe rows out (default since 2026-11-25: keep them with T and P only)")
     ap.add_argument("--partitions", default='{"sex": ["female", "male"], "ancestry": ["eur", "afr", "amr", "eas", "sas", "mid"]}',
                     help="JSON: name -> child strata of the parent stratum 'all'")
     a = ap.parse_args()
@@ -122,14 +126,17 @@ def main():
                     kc = key_cols(d)
                     sec = np.array([tuple(r) in keys if len(kc) > 1 else r[0] in keys for r in d[kc].itertuples(index=False)]) & ~small
                     n_sec += int(sec.sum()); small |= sec
-                for c in [c for c in STAT_COLS if c in d.columns]:
+                probe = f.startswith(("sumstats_", "lead_"))
+                for c in [c for c in STAT_COLS if c in d.columns and not (probe and not a.drop_small_probe_rows and c in ("T", "P"))]:
                     d[c] = d[c].astype(object); d.loc[small, c] = "suppressed"
                 for c in cc:
                     v = pd.to_numeric(d[c], errors="coerce"); d[c] = d[c].astype(object)
                     d.loc[(v.between(1, k)).to_numpy(), c] = f"<={k}"                   # primary
                     d.loc[small & (v > k).to_numpy(), c] = "suppressed"                 # secondary: count > k but withheld
-                if f.startswith("sumstats_") and not a.keep_small_probe_rows:
-                    d = d[~small]                                   # withheld probes are left out instead of written as suppressed rows
+                if f.startswith("sumstats_") and a.drop_small_probe_rows:
+                    d = d[~small]                                   # old behaviour: withheld probes left out
+                if probe and not a.drop_small_probe_rows:
+                    d["stats_withheld"] = small.astype(int)          # 1 = count, BETA, SE, FREQ withheld; T and P shown
                 d.to_csv(dst, sep="\t", index=False)
             elif f.endswith(".json"):
                 json.dump(scrub_json(json.load(open(src)), k), open(dst, "w"), indent=1)

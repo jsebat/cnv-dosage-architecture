@@ -142,7 +142,8 @@ def main():
                          "--panels", Gn.get("panels", "gtex_nonbrain"), "--exons", Gr["exons"], "--gene_cov", Gr["gene_cov"],
                          "--numeric", num, "--factors", fac, "--cohort", str(C.get("cohort", "cohort")), "--stratum", sname,
                          "--cnv_filter", "PGC freeze filters (the cohort's CNV table)",
-                         "--out", f"{out}/gene_assoc/{t}"] + pfq + (["--segdup_bed", Gn["segdups"]] if Gn.get("segdups") else []), threads=cpu)
+                         "--out", f"{out}/gene_assoc/{t}"] + pfq + (["--segdup_bed", Gn["segdups"]] if Gn.get("segdups") else [])
+                        + (["--plof", Gn["plof"]] if Gn.get("plof") else []), threads=cpu)     # PLOF + LOF classes (Jon 2026-11-25)
                     # optional variant, OFF by default (config genes.rare = true AND the spec's position_max_freq set): the same test on the
                     # calls that pass the position-frequency filter -> gene_assoc_rare/. Jon 2026-11-23: the main tables use the PGC filters.
                     if C.get("fig3") and Gn.get("rare", False):
@@ -289,7 +290,7 @@ def main():
     if "genes_export" in steps and C.get("genes") and not failed:      # aggregate-only gene tables -> <export_dir>_genes (never part of 'export')
         run(["export_gene_assoc.py", "--results", root, "--export", C["genes"].get("export_dir", C["export_dir"].rstrip("/") + "_genes"),
              "--strata", ",".join(C.get("strata", {"all": {}})), "--min_cell", str(C["min_cell"]),
-             "--min_carriers", str(C["genes"].get("min_carriers", 5))]
+             "--min_carriers", str(C["genes"].get("min_carriers", 1))]
             + (["--partitions", json.dumps(C["partitions"])] if C.get("partitions") else []))
     if failed:
         raise SystemExit(f"failed strata (rerun them with --strata {','.join(failed)}): {failed}; export not run")
