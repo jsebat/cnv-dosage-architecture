@@ -1,0 +1,61 @@
+[
+ {
+  "name": "size2t",
+  "DEL": [
+   "N1_1~n_all",
+   "N1_1~cls:up:LC",
+   "N1_1~cls:up:HC",
+   "N1_1~cls:down:LC",
+   "N1_1~cls:down:HC",
+   "N1_1~cls:other:HC",
+   "N2_inf~n_all",
+   "N2_inf~cls:up:LC",
+   "N2_inf~cls:up:HC",
+   "N2_inf~cls:down:LC",
+   "N2_inf~cls:down:HC",
+   "N2_inf~cls:other:HC"
+  ],
+  "DUP": [
+   "N1_1~n_all",
+   "N1_1~cls:up:LC",
+   "N1_1~cls:up:HC",
+   "N1_1~cls:down:LC",
+   "N1_1~cls:down:HC",
+   "N1_1~cls:other:HC",
+   "N2_inf~n_all",
+   "N2_inf~cls:up:LC",
+   "N2_inf~cls:up:HC",
+   "N2_inf~cls:down:LC",
+   "N2_inf~cls:down:HC",
+   "N2_inf~cls:other:HC"
+  ]
+ },
+ {
+  "name": "all2t",
+  "DEL": [
+   "N1_inf~n_all",
+   "N1_inf~cls:up:LC",
+   "N1_inf~cls:up:HC",
+   "N1_inf~cls:down:LC",
+   "N1_inf~cls:down:HC",
+   "N1_inf~cls:other:HC"
+  ],
+  "DUP": [
+   "N1_inf~n_all",
+   "N1_inf~cls:up:LC",
+   "N1_inf~cls:up:HC",
+   "N1_inf~cls:down:LC",
+   "N1_inf~cls:down:HC",
+   "N1_inf~cls:other:HC"
+  ]
+ },
+ {
+  "name": "totdose",
+  "DEL": [
+   "N1_inf~n_all"
+  ],
+  "DUP": [
+   "N1_inf~n_all"
+  ]
+ }
+]

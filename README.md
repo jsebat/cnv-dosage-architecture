@@ -15,7 +15,7 @@ Molly Sacks's repository, https://github.com/mollysacks/Sacks2026.
 | Folder | What it holds | Figures |
 |---|---|---|
 | `fig1_main_effects/` | dose-response panels of recurrent CNV effects on height and BMI | Fig. 1 |
-| `recurrentCNVgenotyping/` | recurrent-CNV genotyping tutorial | Fig. 1 |
+| `recurrentCNVgenotyping/` | recurrent-CNV genotyping (Molly Sacks): the tutorial notebook and its port `aou/recurrent_cnv_genotyping_aou.py`. **The only recurrent-CNV genotyper in this repo**: every step that needs recurrent-CNV carriers (locus removals, locus effects, interval strata) calls it through `rcg` in `cnv_anthro/common.py`. Do not write overlap rules for recurrent loci anywhere else (Jon 2026-11-24). | all figures |
 | `main_effects/` | federated recurrent-CNV main effects on height, BMI and head circumference, all ages and < 18 y vs >= 18 y (run per cohort, aggregates only), meta-analysis, Fig. 1 style plots | Fig. 1 |
 | `fig3_mirror_asymmetric/` | mirror line, perpendicular offset and its bimodality, mirror/continuous/single-hit model comparisons, extended two-component model grid | Figs. 2-3, Supplementary Note 5 |
 | `concordance/` | common-variant TWAS concordance of CNV dosage effects (circular genomic permutation), exome-gene concordance | Fig. 2, Supplementary Note 4 |

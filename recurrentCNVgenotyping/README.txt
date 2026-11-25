@@ -34,3 +34,13 @@ You should now able to run the tutorial from your browser!
 This essentially runs the notebook in an interactive job then sets 
 up a tunnel to your local machine, where you can run the notebook
 in your browser.
+
+Change log
+2026-11-24: aou/recurrent_cnv_genotyping_aou.py gained a pipeline API (genotype_calls, carriers, label_calls). It is now the only
+    recurrent-CNV genotyper of the cnv-dosage-architecture pipelines (AllOfUs/cnv_anthro, cnv_gwas/cnv_anthro import it as rcg); their
+    own 50% reciprocal-overlap rules were removed (Jon Sebat).
+2026-11-23: the two cells that read the bedtools output (reciprocal and one-way intersects) now use
+    pd.read_csv(..., sep='\t', header=None). The locus BED files are written without a header, so the
+    bedtools output has none either, and the default header=0 dropped the first hit of each intersect
+    (found by Milad Mortazavi with recurrentCNVgenotyping/aou/crosscheck_molly.py). Genotype matrices made
+    before this date may be missing one carrier call per intersect file; rerun those two cells and the rest.

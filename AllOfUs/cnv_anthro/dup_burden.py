@@ -4,7 +4,7 @@ with duplicated gene count raising height once they are removed? (Jon 2026-11-15
 Per person: n genes duplicated (DUP spans the whole transcript; each gene once), n genes deleted (any exon), and whether any
 duplication contains a 'hit' gene (top-5% GeneBayes s_het or ClinGen haploinsufficiency 2-3). Models (OLS, covariate-residualised):
   M1 all people:                          trait ~ n_DUP + n_DEL
-  M2 asymmetric-interval carriers removed (Molly's 13 intervals, 50% reciprocal overlap, either dosage)
+  M2 asymmetric-interval carriers removed (Molly's 13 intervals, either dosage, Molly's recurrent CNV genotyping)
   M3 carriers of a hit-gene duplication removed
   M4 all people:                          trait ~ n_DUP + n_DEL + any hit-gene DUP
   M5 carriers of a hit-gene duplication only vs non-carriers: n_DUP slope within the hit group
@@ -13,7 +13,7 @@ Also the duplicated-gene-count dose-response by bin in the M3 sample. Aggregate 
 import argparse, json, os
 import numpy as np, pandas as pd
 from scipy import stats
-from common import read_plink_cnv, design_matrix
+from common import read_plink_cnv, design_matrix, rcg
 from conga_axes_qt import load_genes, incidence
 from additivity_constraint import qualifying_calls
 
@@ -74,10 +74,7 @@ def main():
     nDUP = np.asarray(Gu.sum(1)).ravel(); nDEL = np.asarray(Gd.sum(1)).ravel(); hitDUP = (np.asarray(Gu @ hitw).ravel() > 0)
     hcDUP = (np.asarray(Gu @ (np.nan_to_num(shet, nan=-1) > 0.029).astype(float)).ravel() > 0)   # any HC (s_het > 0.029) gene duplicated
     asym = set()
-    for l in pd.read_csv(a.asym_loci, sep="\t").itertuples():
-        c_ = cnv[(cnv.CHR == l.CHR) & (cnv.BP2 >= l.START) & (cnv.BP1 <= l.END)]
-        ov = (np.minimum(c_.BP2, l.END) - np.maximum(c_.BP1, l.START)).clip(lower=0)
-        asym |= set(c_.IID[(ov >= .5 * (l.END - l.START)) & (ov >= .5 * (c_.BP2 - c_.BP1))])
+    asym = rcg.carriers(rcg.genotype_calls(cnv), pd.read_csv(a.asym_loci, sep="\t").NAME, "both")   # Molly's genotyping (Jon 2026-11-24)
     asymm = ph.IID.isin(asym).to_numpy()
     Zc, _ = design_matrix(ph, num, fac); y = ph[a.trait].to_numpy(float)
     rows = []

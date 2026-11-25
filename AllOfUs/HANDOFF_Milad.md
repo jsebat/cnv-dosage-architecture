@@ -304,7 +304,7 @@ python run_pipeline.py --config $C --steps export
 `make_union_strata.py` builds the carrier subsets from AoU's own calls:
 - **noUnionDUP:** no duplication of a "union" gene (top-5% s_het or ClinGen haploinsufficient);
 - **noUnionAny:** no CNV of a union gene;
-- **noAsym13:** no CNV matching one of the 13 asymmetric intervals at 50% reciprocal overlap;
+- **noAsym13:** no carrier of the 13 asymmetric intervals (Molly's recurrent CNV genotyping; 50% reciprocal overlap before 2026-11-24);
 - **noUnionDUP_noAsym13:** both of the first and third.
 
 A missing shift file stops the run (`require_shared_shifts`). That is deliberate: AoU's own shifts cannot be meta-analysed replicate by replicate.
@@ -383,7 +383,22 @@ Your array CNV calls, analysed with the same specs as the UKBB array calls. Conf
    - keeps only participants **not** in `~/cnv_anthro_run/data/sv_samples.txt` (the WGS samples), so the two datasets share no one;
    - applies the UKBB / PGC freeze filters exactly: autosomes, ≥ 10 kb, ≥ 10 probes, PGC 10% frequency rule;
    - prints calls per person and the % of people with no call. Expect roughly the UKBB profile (median 1 call, about 20% with none); send Jon the line.
-4. **"Only" runs:** reference = no call (array definition, as UKBB).
+4. **"Only" runs and burden panel (Jon 2026-11-20, as Milad ran them; in the config since 2026-11-23).** On this array almost everyone
+   has a call (median 8 calls per person, 0.1% with none; UKBB: 1 and about 21%), so the UKBB "no call" reference does not work:
+   - "only" runs: reference = people with no rare (< 1%) gene-hitting call (`only_ref: no_rare_gene`, the WGS rule); the "no call"
+     reference is kept as a sensitivity run (folders suffixed `_nocall`; about 460 people);
+   - burden panel: rare gene-hitting calls (`single_def: rare_gene`, in `burden/`), plus the all-calls version in `burden_all_calls/`
+     (`extra_single_defs` in the config; Milad's notebook runs the same thing as its own stage `burden_allcalls`).
+4b. **Where the array calls come from (Milad's notes, `workbench_milad/NOTES.md`).** Molly's PGC CNV pipeline calls in the "PGC CNV project"
+   workspace: `results/4_filtered/GDA-8v1-0/*.plt`, consensus calls only (`algorithm` = IP,UP: PennCNV and QuantiSNP agree; DELDUP dropped);
+   breakpoints = `consStart` / `consEnd`; sample QC `Freq_Calc == 1`; genotyping batch from `sample_info`; SITES = probes of `probes.txt`
+   inside the call; no call merging (fragmented calls are kept, as in the PGC freeze). The size, probe and frequency filters are then
+   applied by `filter_plink_cnv.py`.
+4c. **Known features of the array call set (they bear on the UK Biobank + All of Us array meta-analysis).** Calls are fragmented at
+   segdup-flanked loci. Duplication carrier frequencies against UK Biobank: 22q11.21 A–D about 0.4×, 1q21.1 about 0.3×, 17q12 and TAR
+   BP1–BP3 lower still; TAR BP1–BP2 duplications are in excess (pieces of BP1–BP3 duplications). Deletions and 16p11.2 match UK Biobank.
+   WGS: TAR BP1–BP2 duplication excess from two segdup-anchored read-depth sites; TAR BP2–BP3 not callable; 1q21.1 distal calls are
+   larger than the locus and fail the 50% reciprocal-overlap rule.
 5. **QC and export** as in B3–B4. Name the tarball `aou_array_sacks2026_export_<date>.tar.gz` so it can't be confused with the WGS export.
 
 ### B6. AoU WGS without the segdup filter (Jon 2026-11-17)

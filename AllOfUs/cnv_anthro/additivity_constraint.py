@@ -17,7 +17,7 @@ import os
 import numpy as np
 import pandas as pd
 from scipy import stats
-from common import read_plink_cnv, design_matrix
+from common import read_plink_cnv, design_matrix, rcg
 from conga_axes_qt import load_genes, incidence
 from conga_grid_qt import twas_z_both, measure
 
@@ -84,7 +84,7 @@ def main():
     ap.add_argument("--hit_def", default="top5_hi", choices=["top5_hi", "phaplo", "union"],
                     help="single-hit genes: top-5%% s_het or ClinGen HI; Collins pHaplo >= 0.86; or the union of all three")
     ap.add_argument("--phaplo", default=None, help="Collins 2022 dosage sensitivity scores TSV (gene, pHaplo, pTriplo)")
-    ap.add_argument("--exclude_loci", default=None, help="TSV NAME CHR START END: drop people carrying a call matching one of these intervals (50%% reciprocal overlap)")
+    ap.add_argument("--exclude_loci", default=None, help="TSV NAME CHR START END: drop carriers of these intervals (Molly's recurrent CNV genotyping)")
     ap.add_argument("--exclude_dosage", default="both", choices=["both", "DEL", "DUP"])
     ap.add_argument("--loci_mode", default="exclude", choices=["exclude", "only"],
                     help="exclude = drop carriers of --exclude_loci; only = keep only those carriers plus the --only_ref reference group")
@@ -108,13 +108,10 @@ def main():
         L = pd.read_csv(a.exclude_loci, sep="\t"); hit = set()
         L = L.rename(columns={c: c.upper() for c in L.columns if c.lower() in ("name", "chr", "start", "end")})   # loci_sacks34.tsv is lower-case, one row per dosage
         L = L.drop_duplicates(["NAME", "CHR", "START", "END"]).reset_index(drop=True)
+        G = rcg.genotype_calls(cnv)   # Molly's recurrent CNV genotyping (Jon 2026-11-24); counts below are carriers, not calls
         for l in L.itertuples():
-            c_ = cnv[(cnv.CHR == l.CHR) & (cnv.BP2 >= l.START) & (cnv.BP1 <= l.END)]
-            if a.exclude_dosage != "both":
-                c_ = c_[c_.TYPE == (1 if a.exclude_dosage == "DEL" else 3)]
-            ov = (np.minimum(c_.BP2, l.END) - np.maximum(c_.BP1, l.START)).clip(lower=0)
-            m = (ov >= 0.5 * (l.END - l.START)) & (ov >= 0.5 * (c_.BP2 - c_.BP1))
-            hit |= set(c_.IID[m]); excl[l.NAME] = int(m.sum())
+            h_ = rcg.carriers(G, l.NAME, a.exclude_dosage)
+            hit |= h_; excl[l.NAME] = len(h_)
         # exclude: drop carriers of these loci; only: keep only carriers of these loci plus the reference group (--only_ref):
         #   nocall              people with no CNV call at all (array definition; UKBB)
         #   no_rare_gene        people with no rare (< --rare_freq) gene-hitting call (WGS definition, Jon 2026-11-17: everyone
@@ -133,17 +130,14 @@ def main():
                 R = pd.read_csv(a.ref_exclude_loci, sep="\t")
                 R = R.rename(columns={c: c.upper() for c in R.columns if c.lower() in ("name", "chr", "start", "end")})
                 R = R.drop_duplicates(["NAME", "CHR", "START", "END"]); rx = set()
-                for l in R.itertuples():
-                    c_ = cnv[(cnv.CHR == l.CHR) & (cnv.BP2 >= l.START) & (cnv.BP1 <= l.END)]
-                    ov = (np.minimum(c_.BP2, l.END) - np.maximum(c_.BP1, l.START)).clip(lower=0)
-                    rx |= set(c_.IID[(ov >= 0.5 * (l.END - l.START)) & (ov >= 0.5 * (c_.BP2 - c_.BP1))])
+                rx = rcg.carriers(G, R.NAME, "both")
                 n_rx = len(rx - hit - drop)
                 drop |= rx - hit
         ph = ph[~ph.IID.isin(drop)].reset_index(drop=True)
         Zc, _ = design_matrix(ph, num, fac); Q, _ = np.linalg.qr(Zc); N = len(ph)
         y = ph[a.trait].to_numpy(float); yr = y - Q @ (Q.T @ y)
         cnv = cnv[cnv.IID.isin(set(ph.IID))].reset_index(drop=True)
-        excl = {"mode": a.loci_mode, "people_dropped": len(drop), "locus_carriers": len(hit), "dosage": a.exclude_dosage, "calls_matched_per_locus": excl}
+        excl = {"mode": a.loci_mode, "people_dropped": len(drop), "locus_carriers": len(hit), "dosage": a.exclude_dosage, "carriers_per_locus": excl}
         if a.loci_mode == "only":
             excl.update(only_ref=a.only_ref, reference_N=int(N - ph.IID.isin(hit).sum()), locus_carriers_in_sample=int(ph.IID.isin(hit).sum()))
             if a.only_ref != "nocall":

@@ -1,0 +1,21 @@
+{
+ "note": "Sacks 2026 dosage paper, Fig. 3 joint model (Jon 2026-11-23). One specification for every cohort (UK Biobank, All of Us WGS, All of Us arrays), so the exports can be meta-analysed replicate by replicate. Do not edit per cohort.",
+ "design": "designs/fig3_joint_2026-11-23.json",
+ "panels": "gtex_nonbrain",
+ "nrep": 2000,
+ "seed": 2026,
+ "loo_mode": "drivers",
+ "major_loci": "16p11_2_BP4_BP5,16p11_2_BP1_BP3,22q11_21_A_D,15q11_2_BP1_BP2,1q21_1,16p13_11_BP1_BP2,17q12,17p12",
+ "perms_sha1": {"height": "157a247259f02719", "bmi": "be761a32dd575298"},
+ "cnv_filter": {"rule": "PGC freeze filters", "position_max_freq": null, "min_frac": 0.5, "note": "Jon 2026-11-23: Fig. 3 uses the PGC freeze filters in every cohort, as the UK Biobank call table was built: >= 10 kb; arrays >= 10 probes; calls carried by > 10% of samples at >= 50% reciprocal overlap removed (applied when the cohort's CNV table is made: aou_sv_to_cnv.py, filter_plink_cnv.py, PGC Freeze_2024). No per-position frequency filter: position_max_freq null. The per-position carrier frequency is recorded (cnv_freq_filter.py). Setting position_max_freq to a number would add the optional position filter in every cohort."},
+ "fits": [
+  {"name": "size2t_mirror", "variant": "size2t", "pairs": "all", "note": "per CNV size (single-gene, >=2-gene): total genes + TWAS up/down x LC/HC + other HC; all four CNV-trait x TWAS-trait pairs"},
+  {"name": "all2t_mirror", "variant": "all2t", "pairs": "matched", "note": "the same model pooled over CNV size"},
+  {"name": "totdose", "variant": "totdose", "pairs": "matched", "note": "total genes hit only (yellow dose-aligned total)"},
+  {"name": "uni_N1_inf", "design": "designs/fig3_univariate_2026-11-23.json", "variants": ["u_N1_inf_up_LC", "u_N1_inf_up_HC", "u_N1_inf_down_LC", "u_N1_inf_down_HC", "u_N1_inf_other_LC", "u_N1_inf_other_HC", "u_N1_inf_n_all"], "dir": "univariate", "pairs": "matched", "summaries": false, "note": "UNIVARIATE test of each class in this CNV-size stratum (trait ~ covariates + the class's DEL and DUP gene counts, no other class terms): DEL z and DUP z against the genome-shift null, LOO as the joint fits; total genes analytic"},
+  {"name": "uni_N1_1", "design": "designs/fig3_univariate_2026-11-23.json", "variants": ["u_N1_1_up_LC", "u_N1_1_up_HC", "u_N1_1_down_LC", "u_N1_1_down_HC", "u_N1_1_other_LC", "u_N1_1_other_HC", "u_N1_1_n_all"], "dir": "univariate", "pairs": "matched", "summaries": false, "note": "UNIVARIATE test of each class in this CNV-size stratum (trait ~ covariates + the class's DEL and DUP gene counts, no other class terms): DEL z and DUP z against the genome-shift null, LOO as the joint fits; total genes analytic"},
+  {"name": "uni_N2_inf", "design": "designs/fig3_univariate_2026-11-23.json", "variants": ["u_N2_inf_up_LC", "u_N2_inf_up_HC", "u_N2_inf_down_LC", "u_N2_inf_down_HC", "u_N2_inf_other_LC", "u_N2_inf_other_HC", "u_N2_inf_n_all"], "dir": "univariate", "pairs": "matched", "summaries": false, "note": "UNIVARIATE test of each class in this CNV-size stratum (trait ~ covariates + the class's DEL and DUP gene counts, no other class terms): DEL z and DUP z against the genome-shift null, LOO as the joint fits; total genes analytic"}
+ ],
+ "gene_mirror": {"nrep": 10000, "seed": 20261122, "note": "gene-level DEL-DUP anticorrelation (yellow mirror total), gene_mirror_qt.py"},
+ "dose_bins": {"min_cell_floor": 20, "note": "binned dose response of every Fig. 3 stratum (fig3_dose_bins.py): univariate per class and CNV size, fixed bins, analytic OLS; bins with 1..max(min_cell, 20) people withheld"}
+}

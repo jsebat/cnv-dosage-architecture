@@ -7,9 +7,19 @@ factor Q, the coefficient of any extra regressor x in  y ~ Z + x  equals the reg
 on the Z-residualised x (Frisch-Waugh-Lovell). For a sparse 0/1 carrier vector only the carriers' rows of Q are
 needed, so a probe test costs O(n_carriers * k) instead of O(N * k).
 """
+import os
+import sys
 import numpy as np
 import pandas as pd
 from scipy import stats
+
+# The one recurrent-CNV genotyper (Molly's notebook, ported by Milad): recurrentCNVgenotyping/aou/. Every step that needs
+# recurrent-CNV carriers uses rcg.genotype_calls / rcg.carriers / rcg.label_calls; no step has overlap rules of its own.
+_here = os.path.dirname(os.path.abspath(__file__))
+for _p in (os.environ.get("RCG_DIR", ""), os.path.join(_here, "rcg"), os.path.join(_here, "..", "..", "recurrentCNVgenotyping", "aou")):
+    if _p and os.path.exists(os.path.join(_p, "recurrent_cnv_genotyping_aou.py")):   # repo layout, or a frozen code snapshot with rcg/
+        sys.path.insert(0, _p); break
+import recurrent_cnv_genotyping_aou as rcg  # noqa: E402
 
 PLINK_CNV_COLS = ["FID", "IID", "CHR", "BP1", "BP2", "TYPE", "SCORE", "SITES"]
 
