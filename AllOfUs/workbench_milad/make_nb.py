@@ -27,7 +27,7 @@ import pandas as pd
 
 REPO_URL   = 'https://github.com/jsebat/cnv-dosage-architecture.git'   # Jon 2026-11-19: code moved here (same history)
 BRANCH     = 'main'
-PIN_COMMIT = 'bdfcf29'         # Jon 2026-11-23: Fig. 3 joint model + gene-based association (HANDOFF_Milad_Fig3.md). Before: 4b64136 (Jon 2026-11-18: sex strata fix (numeric match). ce1ce67 _nosd fix (additivity rerun done). sv/prep/main(all,eur) c4e09df; gridjoint 05fa65b; burden/main_rest b97150f)
+PIN_COMMIT = '2e638c1'         # Jon 2026-11-24: one recurrent-CNV genotyper (Molly's, recurrentCNVgenotyping/aou), rerun in section 17; run_fig3 audit fixed. Before: bdfcf29 (Jon 2026-11-23: Fig. 3 joint model + gene-based association (HANDOFF_Milad_Fig3.md). Before: 4b64136 (Jon 2026-11-18: sex strata fix (numeric match). ce1ce67 _nosd fix (additivity rerun done). sv/prep/main(all,eur) c4e09df; gridjoint 05fa65b; burden/main_rest b97150f)
 
 HOME = os.path.expanduser('~')                 # /home/dataproc on the Spark app, /home/jupyter on a plain JupyterLab app
 REPO = f'{HOME}/repos/cnv-growth-bmi'
@@ -226,7 +226,12 @@ STAGES = {
     'fig3':         '--steps fig3 --strata all --jobs 5',      # 14 fits + 2 gene-mirror + 2 dose-bin runs + in-Workbench summaries
     'fig3_export':  '--steps fig3_export --strata all',        # aggregate-only -> <run>/export_aggregate_fig3, log ends with AUDIT OK
     'genes':        '--steps genes',                           # every stratum, both traits -> results/<stratum>/gene_assoc/<trait>
-    'genes_export': '--steps genes_export --strata all',       # aggregate-only -> <run>/export_aggregate_genes, log ends with AUDIT OK    # arrays (Jon 2026-11-20): second burden version, single_def all_calls -> <stratum>/burden_all_calls/<trait>
+    'genes_export': '--steps genes_export --strata all',       # aggregate-only -> <run>/export_aggregate_genes, log ends with AUDIT OK
+    # 2e638c1 (Jon 2026-11-24): every step with recurrent-CNV carriers now uses Molly's genotyping; rerun into new results folders (section 17).
+    # Jon's 'run_pipeline.py --steps loci,grid,joint,additivity,burden', split as before so --jobs only reaches grid/joint (it also sets the
+    # number of parallel additivity runs). loci + burden on every stratum, additivity on 'all'. fig3 above = run_fig3.py fit,summary.
+    'rcg':          '--steps loci,additivity,burden',
+    'rcg_gridjoint': f'--steps grid,joint --strata all --jobs {GRID_JOBS}',
 }
 # Three datasets, each with its own run folder, filled config and bucket backup (stage markers live in <run>/stages):
 #   wgs      = default WGS run (B2)          nosegdup = WGS without the segdup GWAS filter (B6)          array = Molly's array calls (B5)
@@ -937,6 +942,129 @@ for kind, man in [('fig3', 'export_aggregate_fig3/all/fig3/EXPORT_MANIFEST.txt')
     T = f"{DATASETS[DS]['tar']}_{kind}_export_{time.strftime('%Y%m%d')}.tar.gz"
     sh(f"head -3 {DRUN}/{man}")
     sh(f'cd {DRUN} && tar czf {T} export_aggregate_{kind} && sha256sum {T} > {T}.sha256 && ls -la {T}* && gsutil cp {T} {T}.sha256 {BUCKET_GS}/')
+""")
+
+md(r"""## 17. Rerun with one recurrent-CNV genotyper (Jon 2026-11-24, commit `2e638c1`, top of `AllOfUs/HANDOFF_Milad_Fig3.md`)
+Every step that needs recurrent-CNV carriers (locus-removal runs, locus effects, interval strata) now takes them from Molly's genotyping
+(`recurrentCNVgenotyping/aou`, imported by `common.py`; keep the whole repo checkout). Not affected: probe GWAS, gene-based association,
+alleles, frequency filters. The fit steps skip finished folders, so everything goes to a new results folder inside each run folder
+(`<run>/rcg_20261124/`); the CNV and phenotype tables are reused as they are.
+
+Before this section: `PIN_COMMIT = '2e638c1'` (section 1, done), rerun sections **1, 2, 4, 6 and 7**, section 8 once (for `mask()`) and the
+**config cell of section 14** (not its launch cell). Section 2 stashes the 16.6a patch (it is upstream now).
+
+Rerunning section 7 resets `DATASETS`: run 17.1 again after it (safe to repeat).
+
+Order: 17.1 configs → 17.2 launch (`rcg`, `rcg_gridjoint`, `fig3`, arrays also `burden_allcalls`) → 16.3 QC with `DS = 'wgs_rcg'` / `'array_rcg'` (paste)
+→ 17.3 exports (`export` + `fig3_export`) → 17.4 audit and package. Four tarballs; download them at least an hour apart.""")
+code(r"""
+# 17.1 new configs: same filled configs, only results_dir / export_dir moved to <run>/rcg_20261124
+assert COMMIT.startswith('2e638c1'), f'code at {COMMIT}: pin 2e638c1 and rerun sections 1, 2, 4, 6, 7 and the section 14 config cell'
+sh(f'cd {REPO} && git status --short | head; git stash list | head -3', check=False)
+sh(f'cd {CODE} && {sys.executable} -c "import common; print(\'genotyper:\', common.rcg.__file__)"')
+RCG = 'rcg_20261124'
+for ds in ['wgs', 'array']:
+    D = DATASETS[ds]; c_ = json.load(open(f"{CODE}/{D['cfg']}"))
+    assert c_.get('fig3'), f"{ds}: filled config has no fig3 block -> rerun section 6 (wgs) / the section 14 config cell (array)"
+    run_ = f"{D['run']}/{RCG}"
+    for d in ['results', 'logs', 'stages']: os.makedirs(f'{run_}/{d}', exist_ok=True)
+    c_['results_dir'], c_['export_dir'] = f'{run_}/results', f'{run_}/export_aggregate'
+    cfg_ = D['cfg'].replace('_filled.json', f'_{RCG}_filled.json')
+    json.dump(c_, open(f'{CODE}/{cfg_}', 'w'), indent=1); shutil.copy(f'{CODE}/{cfg_}', f'{run_}/logs/config_used.json')
+    if ds == 'array':                         # second burden version (all_calls), same script as section 14
+        shutil.copy(f"{D['run']}/logs/burden_allcalls.py", f'{run_}/logs/burden_allcalls.py')
+    DATASETS[f'{ds}_rcg'] = dict(run=run_, cfg=cfg_, backup=f"{D['backup']}/{RCG}", tar=f"{D['tar']}_rcg",
+                                 stages=['rcg', 'rcg_gridjoint', 'fig3'] + (['burden_allcalls'] if ds == 'array' else []) + ['export', 'fig3_export'])
+    print(ds, '->', cfg_, '| results', c_['results_dir'], '| cnv', c_['cnv_table'], '| min_cell', c_['min_cell'])
+""")
+code(r"""
+# 17.2 launch both datasets (two drivers). rcg = loci + burden on 9 strata and additivity on 'all'; rcg_gridjoint = grid + joint on 'all'
+# (several hours, like gridjoint before); fig3 = run_fig3.py fit,summary (several hours). If status() shows memory pressure, stop one driver and relaunch later
+# (finished stages and finished fits are skipped).
+launch(['rcg', 'rcg_gridjoint', 'fig3'], tag='', ds='wgs_rcg')
+launch(['rcg', 'rcg_gridjoint', 'fig3', 'burden_allcalls'], tag='ar', ds='array_rcg')
+""")
+code(r"""
+status()      # the two new datasets show up as wgs_rcg and array_rcg
+""")
+code(r"""
+# 17.3 exports, after 16.3 (DS = 'wgs_rcg' / 'array_rcg') looks fine. export_aggregate.py copies everything under results/ and has no rule
+# for fig3/ (the first run exported before fig3 existed; here fig3 ran first and the export failed inside results/all/fig3). Fig. 3 has its
+# own audited export, so results/all/fig3 is held aside while the main export runs (< 1 min, in this cell) and is always put back.
+# Then fig3_export runs in the background as before (log ends with AUDIT OK). Each export refuses to overwrite an existing folder.
+def export_rcg(ds, tag):
+    D = DATASETS[ds]; RUN_ = D['run']; A = f'{RUN_}/results/all'
+    need = [s for s in D['stages'] if s not in ('export', 'fig3_export')]
+    assert all(os.path.exists(f'{RUN_}/stages/{s}.done') for s in need), f'{ds}: wait for {need}'
+    assert not running(tag), f'driver{tag} still running'
+    assert not os.path.exists(f'{RUN_}/export_aggregate'), f'{RUN_}/export_aggregate exists: move it away first'
+    if not os.path.exists(f'{RUN_}/stages/export.done'):
+        os.rename(f'{A}/fig3', f'{RUN_}/fig3_hold')
+        try:
+            rc = sh(f"cd {CODE} && {sys.executable} run_pipeline.py --config {D['cfg']} --steps export > {RUN_}/logs/export.log 2>&1", check=False)
+        finally:
+            os.rename(f'{RUN_}/fig3_hold', f'{A}/fig3')
+        if rc:
+            x = open(f'{RUN_}/logs/export.log', errors='replace').read().splitlines()
+            k = next((n for n, l in enumerate(x) if l.startswith('Traceback')), 0)     # first traceback = export_aggregate.py's own
+            print('\n'.join(l[:250] for l in x[k:k + 30] if '\t' not in l)); raise RuntimeError(f'{ds}: export failed')
+        if os.path.exists(f'{RUN_}/stages/export.failed'): os.remove(f'{RUN_}/stages/export.failed')
+        open(f'{RUN_}/stages/export.done', 'w').write(COMMIT + '\n')
+        sh(f'ls {RUN_}/export_aggregate; du -sh {RUN_}/export_aggregate; find {RUN_}/export_aggregate -path "*fig3*" | head -2', check=False)
+    launch(['fig3_export'], tag=tag, ds=ds)
+
+export_rcg('wgs_rcg', '')
+# export_rcg('array_rcg', 'ar')      # after array_rcg fig3 and burden_allcalls are DONE
+""")
+code(r"""
+# 17.3b small grid cells in the main export. Since 965703c conga_grid_qt.py writes n_carriers_term into observed_terms.tsv (grid_univariate,
+# grid_callsize, joint); export_aggregate.py's COUNT_COLS does not list it, so cells with 1-20 carriers went out unmasked (the first run's grid,
+# at 05fa65b, had no such column). Same rule as run_fig3.export_fit, applied to the exported copy only: n_carriers_term 1..20 -> '<=20',
+# beta/se/t of that (run, readout) and of its |mirror readout -> blank. Shifted-genome nulls (null_runs.npz) are left as they are.
+def mask_grid_terms(ds, k=MIN_CELL):
+    E_ = f"{DATASETS[ds]['run']}/export_aggregate"; nf = nc = 0
+    for f in glob.glob(f'{E_}/**/observed_terms.tsv', recursive=True):
+        ob = pd.read_csv(f, sep='\t', dtype={'n_carriers_term': object})
+        if 'n_carriers_term' not in ob.columns: continue
+        n = pd.to_numeric(ob.n_carriers_term, errors='coerce'); sm = n.between(1, k)
+        if not sm.any(): continue
+        small = {(r, q) for r, q in zip(ob.run[sm], ob.readout[sm])}
+        small |= {(r, q.rsplit('|', 1)[0] + '|mirror') for r, q in list(small)}
+        hit = np.array([(r, q) in small for r, q in zip(ob.run, ob.readout)])
+        for c in [c for c in ['beta', 'se', 't'] if c in ob.columns]: ob.loc[hit, c] = np.nan
+        ob.loc[sm.to_numpy(), 'n_carriers_term'] = f'<={k}'
+        ob.to_csv(f, sep='\t', index=False, float_format='%.10g'); nf += 1; nc += int(sm.sum())
+    open(f'{E_}/EXPORT_MANIFEST.txt', 'a').write(f'notebook 17.3b: observed_terms n_carriers_term 1..{k} masked, beta/se/t blanked: {nc} cells in {nf} tables\n')
+    print(ds, '| tables masked', nf, '| cells', nc)
+mask_grid_terms('wgs_rcg')
+# mask_grid_terms('array_rcg')     # after export_rcg('array_rcg', 'ar')
+""")
+code(r"""
+# 17.4 audit and packaging (set DS). Then download each .tar.gz + .sha256 (one tarball per hour at most) and scp to
+# the shared results folder at UCSD
+import re
+DS = 'wgs_rcg'                          # 'wgs_rcg' | 'array_rcg'
+DRUN = DATASETS[DS]['run']
+last = open(f'{DRUN}/logs/fig3_export.log').read().strip().splitlines()[-3:]
+assert any('AUDIT OK' in l for l in last), f'fig3_export.log does not end with AUDIT OK: {last}'
+sh(f'head -3 {DRUN}/export_aggregate_fig3/all/fig3/EXPORT_MANIFEST.txt')
+# same audit as 9.1 on the main export: no count from 1 to 20 in any count-like column
+E = f'{DRUN}/export_aggregate'
+COUNT = re.compile(r'^(n|N)$|^n_|_n$|^N_|carrier|count|^ncnv|^n[A-Z]', re.I)
+NOT_COUNT = re.compile(r'^n_probes$|^noloci_|^(mean|sd)_count$', re.I)
+bad, nfile = [], 0
+for f in glob.glob(f'{E}/**/*.tsv', recursive=True) + glob.glob(f'{E}/**/*.csv', recursive=True):
+    nfile += 1
+    d = pd.read_csv(f, sep='\t' if f.endswith('.tsv') else ',', dtype=str, low_memory=False)
+    for c in [c for c in d.columns if COUNT.search(str(c)) and not NOT_COUNT.search(str(c))]:
+        k = int(pd.to_numeric(d[c], errors='coerce').between(1, 20).sum())
+        if k: bad.append((os.path.relpath(f, E), c, k))
+print(nfile, 'tables checked'); print('\n'.join(f'VIOLATION {f} [{c}] {k} rows' for f, c, k in bad) or 'OK: no 1-20 counts in count columns')
+sh(f'find {E} -type f | grep -i -E "pheno|genotype|\\.cnv" || echo "OK: no person-level file names"', check=False)
+assert not bad, 'fix the export audit first'
+for kind, folder in [('export', 'export_aggregate'), ('fig3_export', 'export_aggregate_fig3')]:
+    T = f"{DATASETS[DS]['tar']}_{kind}_{time.strftime('%Y%m%d')}.tar.gz"
+    sh(f'cd {DRUN} && tar czf {T} {folder} && sha256sum {T} > {T}.sha256 && ls -la {T}* && gsutil cp {T} {T}.sha256 {BUCKET_GS}/')
 """)
 
 nb = {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
