@@ -311,7 +311,7 @@ def schematic(ax, trait, caption=True):
         tot = g.loc["total"]
         dd = np.array([-1, 1]) / np.sqrt(2) if tot.obs < 0 else np.array([1, 1]) / np.sqrt(2)
         if S2VAR == "size2t":
-            total_arrows(Q, trait, dose=True)   # Jon 2026-11-23 'apply this change to both versions': yellow = total on both diagonals
+            total_arrows(Q, trait, dose=True, sgn=sgn)   # Jon 2026-11-23 'apply this change to both versions': yellow = total on both diagonals
             ax.plot([-L, L], [-L, L], color=GREY, lw=.7, ls="--", zorder=1)
         else:
             Q.append((dd * abs(tot.z), "#f2c230", tot.P < .05, "full"))
@@ -323,7 +323,10 @@ def schematic(ax, trait, caption=True):
             # Fig. 3a (size3, matched TWAS, per constraint stratum): for each statistic the CNV-size row (single-gene or >= 2-gene) with the larger
             # |z| is drawn, with no size marking; significance uses P x 2 (Bonferroni over the two size rows) so that taking the larger of two
             # is not anticonservative. Thin open-headed = trend (|z| >= 1.5, P x 2 >= 0.05); |z| < 1.5 not drawn.
-            mdir = np.array([-1, 1]) / np.sqrt(2)
+            # Jon 2026-11-26 ('DEL up DUP down should point to lower right'): M4 is signed by TWAS concordance, not by CNV effect, so its
+            # diagonal is drawn in the trait's own mirror direction (sgn: height up-left = DUP raises / DEL lowers; BMI down-right = DEL
+            # raises / DUP lowers, the direction of the recurrent-locus mirror), as the yellow total
+            mdir = np.array([-1, 1]) / np.sqrt(2) * sgn
             for st, col in (("LC", "#f28e2b"), ("HC", "#7b3294")):
                 # arrow rule (pick_arrow) + one arrow per colour (component): mirror M4 on the diagonal, else the DEL / DUP arms
                 g_ = lambda stat: (lambda t, s, st_: s2get(t, s, st_, stat))
@@ -363,8 +366,18 @@ def schematic(ax, trait, caption=True):
         # diagonal, else its DEL / DUP terms on the axes
         gcls = "other" if S2VAR == "size2t" else "none"
         g_ = lambda arm: (lambda t, s, st_: s2term(t, f"{s}~cls:{gcls}:{st_}", arm))
-        component(Q, trait, ("HC",), "#1b7837", "arm", (g_("mirror"), np.array([-1, 1]) / np.sqrt(2), ("mirOth", "HC")),
+        # Jon 2026-11-26 ('a HC dose aligned effect of no TWAS would be green upper right'): both diagonals are tested, as in the alternate
+        # figure: the '|mirror' readout (t_DUP - t_DEL)/sqrt2 is already in CNV-effect space (positive = up-left) and doseOth on DUP = DEL
+        component(Q, trait, ("HC",), "#1b7837", "arm",
+                  [(g_("mirror"), np.array([-1, 1]) / np.sqrt(2), ("mirOth", "HC")),
+                   ((lambda t, s, st_: dget(t, s, st_, "doseOth")), np.array([1, 1]) / np.sqrt(2), ("doseOth", "HC"))],
                   [(g_("DEL"), (1, 0)), (g_("DUP"), (0, 1))])
+        if S2VAR == "size2t":
+            # Jon 2026-11-26 ('add a ... arrow to both diagonal axes for height'): LC weak-or-no-TWAS genes (reference class = the total-genes
+            # term), mirror readout (t_DUP - t_DEL)/sqrt2 (positive = up-left) and doseTot (DUP = DEL); same arrow rule (FDR < 5% + every LOO)
+            component(Q, trait, ("LC",), LCW, "full",
+                      [((lambda t, s, st_: s2term(t, f"{s}~n_all", "mirror")), np.array([-1, 1]) / np.sqrt(2), ("lcoth_m", "LC")),
+                       ((lambda t, s, st_: dget(t, s, "total", "doseTot")), np.array([1, 1]) / np.sqrt(2), ("lcoth_d", "LC"))], [])
     for arm, vec in (("DEL", (1, 0)), ("DUP", (0, 1))) if _s3sum() is None else ():   # older runs only (no size2t / size3 results)
         r = cell(j6, "cls:other:HC", arm)
         if r is not None and np.isfinite(r.z_emp):
@@ -373,6 +386,7 @@ def schematic(ax, trait, caption=True):
     ax.set_xlim(-L, L); ax.set_ylim(-L, L); ax.set_aspect("equal"); ax.set_xticks([]); ax.set_yticks([])
     for s in ax.spines.values():
         s.set_visible(False)
+    label_diagonals(ax, L)
     ax.text(L, -.5, f"deletion raises {TL[trait] if trait == 'bmi' else 'height'}", ha="right", va="top", size=5.6); ax.text(-L, -.5, "lowers", ha="left", va="top", size=5.6)
     ax.text(.35, L, f"duplication raises {TL[trait] if trait == 'bmi' else 'height'}", ha="left", va="top", size=5.6); ax.text(.35, -L, "lowers", ha="left", va="bottom", size=5.6)
     ax.set_title(TL[trait], loc="left", weight="bold", size=9)
@@ -682,6 +696,7 @@ def dget(trait, size, st, stat):
 
 
 GREYC = "#8c8c8c"   # total-genes term of the joint model (ordinary gene), Jon 2026-11-23
+LCW = "#29b6c6"     # LC weak-or-no-TWAS genes (reference class): cyan, distinct from yellow / orange / purple / green (Jon 2026-11-26: not brown)
 TD = Path(os.environ.get("GW2_TOTDOSE", ROOT.parent / "totdose_2026-11-23"))   # totdose fit + dose_summary.py (total genes, all CNV sizes)
 
 
@@ -710,7 +725,7 @@ def total_tiles(trait):
     return m, d
 
 
-def total_arrows(Q, trait, dose):
+def total_arrows(Q, trait, dose, sgn=1):
     """Yellow = total (Jon 2026-11-23). Mirror diagonal: gene-level total mirror r(zDEL, zDUP), all genes and CNV sizes, z vs the gene-circle
     shift null (as the main figure). Dose-aligned diagonal (alternate figure only): total genes hit, all CNV sizes, (t_DEL + t_DUP)/sqrt2 of the
     totdose fit, analytic; thick = FDR < 5% across the two traits, thin = P < 0.05 and held in every leave-one-locus-out run."""
@@ -721,7 +736,8 @@ def total_arrows(Q, trait, dose):
         Pt = [pd.read_csv(GM / t_ / "gene_mirror_summary.tsv", sep="	").query("size == 'all sizes' and stratum == 'all' and stat == 'total'").P.iloc[0] for t_ in TRAITS]
         qt = dict(zip(TRAITS, bh(Pt)))[trait]
         if qt < .05 and tot.n_loo > 0 and tot.loo_held == tot.n_loo:
-            dd = np.array([-1, 1]) / np.sqrt(2) if tot.obs < 0 else np.array([1, 1]) / np.sqrt(2)
+            # a correlation has no direction along its line: drawn in the trait's mirror direction (Jon 2026-11-26: BMI = DEL up / DUP down)
+            dd = np.array([-1, 1]) / np.sqrt(2) * sgn if tot.obs < 0 else np.array([1, 1]) / np.sqrt(2)
             Q.append((dd * abs(tot.z), "#f2c230", True, "full")); DRAWN.add((("tot", "mirror"), trait, "N1_inf"))
     X = _totdose() if dose else None
     if X is not None:
@@ -781,6 +797,16 @@ def schematic_dose(ax, trait):
                                  (-.35, -L, "−", "right", "bottom")):
         ax.text(x_, y_, t_, ha=ha_, va=va_, size=11, weight="bold", color=INK)   # Jon: larger + / -
     ax.set_title(TL[trait], loc="left", weight="bold", size=9)
+
+
+def label_diagonals(ax, L):
+    """Jon 2026-11-26: 'The dotted lines represent a mirror axis and a dose-aligned axis. Label them so it's clear to the reader.' Each dashed
+    diagonal gets its name at both ends, written along the line and set off to one side so it never sits under an arrow."""
+    # short names at the lower ends only (the upper ends carry the panel title and the 'duplication raises' label); the meaning of each axis
+    # is spelled out in the legend line under panel b
+    for (x, y), rot, (dx, dy), txt in (((.8 * L, -.8 * L), -45, (-.42, -.42), "mirror axis"),
+                                       ((-.8 * L, -.8 * L), 45, (-.42, .42), "dose-aligned axis")):
+        ax.text(x + dx, y + dy, txt, rotation=rot, rotation_mode="anchor", ha="center", va="center", size=5.2, style="italic", color="#666666", zorder=1)
 
 
 def flush_arrows(ax, Q, L):
@@ -859,7 +885,17 @@ def pick_arrow(fetch, trait, strata, key=None):
         if sel:
             v, _, k = max(sel, key=lambda m: abs(m[0][0]))
             if key is not None:
-                DRAWN.add((key, trait, k[1]))
+                # Jon 2026-11-26 ('green box both tiles'): outline every qualifying tile behind the arrow, not only the drawn size row, and
+                # the All CNVs tile of the same statistic when it also qualifies (FDR < 5% in the family extended by the All CNVs rows, held)
+                for m in sel:
+                    DRAWN.add((key, trait, m[2][1]))
+                fam_a = fam + [(t, "N1_inf", st) for t in TRAITS for st in strata]
+                va = {kk: (vals[kk] if kk in vals else fetch(*kk)) for kk in fam_a}
+                oka = [kk for kk in fam_a if va[kk] is not None and np.isfinite(va[kk][1])]
+                qa = dict(zip(oka, bh([va[kk][1] for kk in oka]))) if oka else {}
+                ka = (trait, "N1_inf", strata[0])
+                if ka in qa and qa[ka] < .05 and (va[ka][2] or not rob) and np.sign(va[ka][0]) == np.sign(v[0]):
+                    DRAWN.add((key, trait, "N1_inf"))
             return v[0], thick_
     return None
 
@@ -877,7 +913,8 @@ class Tiles:
     def __init__(self):
         self.items = []
 
-    def add(self, ax, x, y, w, h, c, fam, fs=5.6, sigcol=None):
+    def add(self, ax, x, y, w, h, c, fam, fs=None, sigcol=None):
+        fs = fs if fs is not None else (4.6 if S2VAR == "size2t" else 5.6)   # 2026-11-26: smaller tiles with the third (All genes) group
         self.items.append((ax, x, y, w, h, c, fam, fs, sigcol))
 
     def draw(self):
@@ -901,14 +938,20 @@ def tile3(ax, x, y, w, h, c, fs=5.6, q=np.nan, sigcol=None):
     st = "**" if q < .05 else ("*" if c[1] < .05 else "")
     t = ax.text(x + w / 2, y + h / 2, f"{c[0]:.1f}" + st, ha="center", va="center", size=fs,
                 color="white" if abs(c[0]) > 2.6 else INK, weight="bold" if c[1] < .05 else "normal")
-    if sigcol and (sigcol[1] in DRAWN if isinstance(sigcol, tuple) else q < .05):
+    on = False
+    if sigcol:
+        on = (sigcol[1] in DRAWN) if isinstance(sigcol, tuple) else q < .05
+        if isinstance(sigcol, tuple) and len(sigcol) > 2 and sigcol[2] == "box":   # right block: ** and black box (Jon 2026-11-26)
+            on = on or (q < .05 and bool(c[2]))
+    if on:
         sigcol = sigcol[0] if isinstance(sigcol, tuple) else sigcol
         # Jon 2026-11-23: 'make the z value in the tile match the color [of its arrow] when it's significant' (FDR < 5%); white outline
         # keeps the coloured text legible on the tile colour
         import matplotlib.patheffects as pe
         # Jon 2026-11-23: 'Instead of making the text yellow orange green ... place a small colored box around the text to signify the arrow it
         # corresponds to': text keeps its normal colour; a box in the arrow's colour marks the tile whose arrow is drawn in panel b
-        t.set_bbox(dict(boxstyle="round,pad=0.18", fc="none", ec=sigcol, lw=1.6))
+        if S2VAR != "size2t":   # Jon 2026-11-26: 'eliminate the colored open boxes around the text' (section backgrounds carry the colour)
+            t.set_bbox(dict(boxstyle="round,pad=0.18", fc="none", ec=sigcol, lw=1.6))
     if c[2]:
         ax.add_patch(Rectangle((x + .04, y + .04), w - .08, h - .08, fill=False, ec=INK, lw=1.3))
 
@@ -934,13 +977,23 @@ def fig3(dose=False):
         # Jon 2026-11-23: "The no TWAS and the weak TWAS always trend in the same direction ... collapse them ... put them in the model row where
         # weak TWAS currently sits. Also ... total gene count term ... in bottom row where no-TWAS currently sits." Model size2t, per CNV size:
         # total genes hit + up / down x LC / HC + other (weak or no TWAS z) HC; other LC genes are the reference absorbed by the total term.
-        ROWS4 = [("up", "z>+3"), ("down", "z<−3"), ("other", "weak or no TWAS"), ("n_all", "total genes")]   # Jon 2026-11-23: weak or no TWAS to row 3
+        # Jon 2026-11-26 ('move the total genes to its own group ... 6 groups/titles instead of 4', after: the total-genes term of this model
+        # IS the per-gene effect of the reference class, LC weak-or-no-TWAS genes, because every other class has its own term): the total-genes
+        # term is shown as the LC 'weak or no TWAS' row (one tall row, rows 3-4), and the genuine all-gene totals (gene-level mirror, total-
+        # genes-only model) move to a third group 'All genes' (All CNVs row only; they are not fitted per CNV size)
+        ROWS4 = [("up", "z>+3"), ("down", "z<−3"), ("other", "weak or no TWAS")]
         # Jon 2026-11-23: "the figure needs to have a weak or no TWAS tile for mirror and for dose-aligned. So there would be mirror CNV-TWAS,
         # mirror CNV, dose aligned CNV-TWAS and dose-aligned CNV, to the right of each 2x8 grid." Right block: columns mirror | dose-aligned,
         # rows CNV-TWAS (M4 / D4 of the up and down terms) | CNV (weak or no TWAS HC term; in LC, whose weak-or-no-TWAS genes are the reference,
         # the total-genes term that carries them, analytic).
         SW = 1.45; RL = .45; UW = 2 + GAP + 2 * SW + RL   # RL: column for the block's row labels (Jon: 'add row labels', coloured as the arrows)
     UH = 4.0; BW = 2 * UW + CG; PT, PB, PS = .55, .3, .35   # frame padding top / bottom / sides
+    HY = .06                                             # column-header offset above the tiles
+    if S2VAR == "size2t":   # Jon 2026-11-26: backgrounds evenly around the tiles, labels moved up to clear them
+        PT, HY = .85, .3
+    AW = 2 * SW + RL if S2VAR == "size2t" else 0             # 'All genes' group (Jon 2026-11-26)
+    if AW:
+        BW += CG + AW
     STEP = UH + PT + PB                                    # rows abut: next frame top = this frame bottom
     TA = Tiles()   # FDR family = one statistic (tile position, arm or mirror) across the 8 trait x CNV-size x LC/HC units
     # Jon 2026-11-23: 'add a full grid row for all CNVs above ... order it all genes, single gene CNVs, >2 gene CNVs'. The all-CNVs row is the
@@ -948,21 +1001,35 @@ def fig3(dose=False):
     AROWS = ([("N1_inf", "All CNVs")] if S2VAR == "size2t" else []) + [("N1_1", "Single-gene CNVs"), ("N2_inf", "≥2-gene CNVs")]
     tag = lambda size, fam: fam + (("all",) if size == "N1_inf" else ())
     fx = {"height": (-LA - PS, BW + PS)}; fx["bmi"] = (fx["height"][1], fx["height"][1] + BW + 2 * PS)
+    if AW:   # Jon 2026-11-26 'eliminate the white space': size panel a to the grid's aspect (3 groups make it wider and flatter)
+        xr = fx["bmi"][1] + .1 - (-LA - PS - .9); yr = (UH + PT + 1.75) - (-(len(AROWS) - 1) * STEP - PB - .2)
+        need_h = 7.2 * .98 * yr / xr; FH = 4.28 + need_h + .3; fy = 7.4 / FH   # .3 in on top for the cohort label; grid close to the caption
+        fig.set_size_inches(7.2, FH); ax.set_position([.01, 4.28 / FH, .98, need_h / FH])
     for b, trait in enumerate(TRAITS):
         x_l, x_r = fx[trait]; bx = x_r - PS - BW
         # Jon 2026-11-23: 'Remove CNV from the subtitle'
-        ax.text((bx + bx + BW) / 2, UH + PT + .75, TL[trait], ha="center", va="bottom", size=10, weight="bold")
+        # Jon 2026-11-26: trait title raised so it clears the coloured group-title boxes
+        ax.text((bx + bx + BW) / 2, UH + PT + (1.05 if AW else .75), TL[trait], ha="center", va="bottom", size=10, weight="bold")
         for i, (size, slab) in enumerate(AROWS):
             y0 = -i * STEP
             ax.add_patch(Rectangle((x_l, y0 - PB), x_r - x_l, STEP, fill=False, ec="#c8c8c8", lw=1.1))
         for j, st in enumerate(("LC", "HC")):
             x0 = bx + j * (UW + CG)
             ax.text(x0 + UW / 2, UH + PT + .1, f"{st} genes", ha="center", va="bottom", size=7.4, weight="bold")
-            ax.text(x0 + .5, UH + .06, "DUP", ha="center", va="bottom", size=6, color=BLUE)
-            ax.text(x0 + 1.5, UH + .06, "DEL", ha="center", va="bottom", size=6, color=RED)
+            if AW:   # Jon 2026-11-26: colour-coded section backgrounds keyed to the arrows in b (titles stay plain): CNV-TWAS = orange (LC) /
+                #      purple (HC); weak or no TWAS = grey (LC, the reference class: no arrow) / green (HC); All genes = yellow
+                for i, _ in enumerate(AROWS):
+                    y0 = -i * STEP; xe = x0 + 2 + GAP + 2 * SW - .04
+                    P_ = .24   # Jon 2026-11-26 'backgrounds are not very visible, can you enlarge them': wider margin, stronger colour
+                    ax.add_patch(Rectangle((x0 - P_, y0 + 2.0), xe - x0 + 2 * P_, 2 + P_, fc="#f28e2b" if st == "LC" else "#7b3294",
+                                           ec="none", alpha=.75, zorder=0))
+                    ax.add_patch(Rectangle((x0 - P_, y0 - P_), xe - x0 + 2 * P_, 2 + P_, fc=LCW if st == "LC" else "#1b7837",
+                                           ec="none", alpha=.75, zorder=0))
+            ax.text(x0 + .5, UH + HY, "DUP", ha="center", va="bottom", size=6, color=BLUE)
+            ax.text(x0 + 1.5, UH + HY, "DEL", ha="center", va="bottom", size=6, color=RED)
             if S2VAR == "size2t":
-                ax.text(x0 + 2 + GAP + SW / 2, UH + .06, "mirror", ha="center", va="bottom", size=5.4)
-                ax.text(x0 + 2 + GAP + 1.5 * SW, UH + .06, "dose-aligned", ha="center", va="bottom", size=5)
+                ax.text(x0 + 2 + GAP + SW / 2, UH + HY, "mirror", ha="center", va="bottom", size=4.6)
+                ax.text(x0 + 2 + GAP + 1.5 * SW, UH + HY, "dose-\naligned", ha="center", va="bottom", size=4.4, linespacing=.9)
             else:
                 ax.text(x0 + 3 + GAP, UH + .06, "mirror", ha="center", va="bottom", size=6)
             for i, (size, _) in enumerate(AROWS):
@@ -970,9 +1037,11 @@ def fig3(dose=False):
                 for r_, (cls, _) in enumerate(ROWS4):
                     for k, dos in enumerate(("DUP", "DEL")):
                         yy = y0 + UH - 1 - r_
-                        if cls == "n_all":            # one total-count term per CNV size and dosage, shared by LC and HC: drawn once, under LC
-                            if st == "LC":
-                                TA.add(ax, x0 + k, yy, 1, 1, s2term(trait, f"{size}~n_all", dos), tag(size, ("a", "n_all", dos)))
+                        if cls == "other" and S2VAR == "size2t":
+                            yy = y0                   # one tall row (rows 3-4) beside the 'CNV only' tiles
+                        if cls == "other" and st == "LC" and S2VAR == "size2t":
+                            # reference class: its per-gene effect is the total-genes term (same FDR family as before)
+                            TA.add(ax, x0 + k, yy, 1, 2, s2term(trait, f"{size}~n_all", dos), tag(size, ("a", "n_all", dos)))
                             continue
                         if cls == "other" and st == "LC":   # reference class (absorbed into the total term)
                             ax.add_patch(Rectangle((x0 + k, yy), 1, 1, fc="#f2f2f2", ec="white", lw=1))
@@ -986,34 +1055,52 @@ def fig3(dose=False):
                             sc = ("#f28e2b" if st == "LC" else "#7b3294", ((f"t{cls}{dos}", st), trait, size))   # single-tile fallback
                         elif cls == "other" and st == "HC":
                             sc = ("#1b7837", (("oth" + dos, "HC"), trait, size))
-                        TA.add(ax, x0 + k, yy, 1, 1, s2term(trait, f"{size}~cls:{cls}:{st}", dos), tag(size, ("a", cls, dos)), sigcol=sc)
+                        TA.add(ax, x0 + k, yy, 1, 2 if (cls == "other" and S2VAR == "size2t") else 1,
+                               s2term(trait, f"{size}~cls:{cls}:{st}", dos), tag(size, ("a", cls, dos)), sigcol=sc)
                 if S2VAR == "size2t":
                     xm = x0 + 2 + GAP
-                    if st == "LC" and size == "N1_inf":   # all-CNVs row: the yellow totals (Jon 2026-11-23)
-                        (mC, dC), fC, lC = total_tiles(trait), "tot", "CNV total"
-                    elif st == "LC":
+                    if st == "LC":   # LC weak or no TWAS = the total-genes term (the yellow totals moved to 'All genes', Jon 2026-11-26)
                         mC, dC, fC, lC = s2term(trait, f"{size}~n_all", "mirror"), dget(trait, size, "total", "doseTot"), "total", "CNV (total)"
                     else:
                         mC, dC, fC, lC = s2term(trait, f"{size}~cls:other:HC", "mirror"), dget(trait, size, "HC", "doseOth"), "otherHC", "CNV"
                     for cx, top, bot, fam in ((xm, s2get(trait, size, st, "M4"), mC, "mirror"), (xm + SW, dget(trait, size, st, "D4"), dC, "dose")):
                         kt = ("M4" if fam == "mirror" else "D4", st); kb = ("mirOth" if fam == "mirror" else "doseOth", "HC")
+                        # Jon 2026-11-26: 'Every mirror/dose aligned tile with black box with a ** in it should get colored box label':
+                        # right-block tiles are outlined in their component colour when ** (FDR < 5%) and locus-robust (black box), whether
+                        # or not their arrow is the one drawn; LC 'CNV (total)' tiles (total-genes term) take the yellow of the totals
                         TA.add(ax, cx, y0 + 2.04, SW - .04, 1.96, top, tag(size, ("a", fam, "TWAS")), fs=7,
-                               sigcol=("#f28e2b" if st == "LC" else "#7b3294", (kt, trait, size)))
-                        sb = (("#f2c230", (("tot", fam), trait, size)) if fC == "tot" else None if st == "LC" else ("#1b7837", (kb, trait, size)))
+                               sigcol=("#f28e2b" if st == "LC" else "#7b3294", (kt, trait, size), "box"))
+                        # LC weak-or-no-TWAS tiles: no coloured box (Jon 2026-11-26 'only have yellow boxes in the all genes category');
+                        # HC: green
+                        sb = None if st == "LC" else ("#1b7837", (kb, trait, size), "box")
                         TA.add(ax, cx, y0, SW - .04, 1.96, bot, tag(size, ("a", fam, fC)), fs=7, sigcol=sb)
                     # row labels of the block, coloured as the panel b arrows (Jon 2026-11-23): CNV-TWAS = orange (LC) / brown (HC);
                     # CNV only = grey (LC: total-genes term, ordinary gene) / green (HC: weak or no TWAS)
-                    xr = xm + 2 * SW + .08
-                    ax.text(xr, y0 + 3.02, "CNV–TWAS", rotation=90, ha="left", va="center", size=5.2, weight="bold",
+                    xr = xm + 2 * SW + .3   # clear of the section background (Jon 2026-11-26)
+                    ax.text(xr, y0 + 3.02, "CNV–TWAS", rotation=90, ha="left", va="center", size=4.2, weight="bold",
                             color=INK)   # Jon 2026-11-23: 'remove all green, yellow orange text fonts'
-                    lab_, col_ = ("CNV total" if (st == "LC" and size == "N1_inf") else "CNV only"), INK
-                    ax.text(xr, y0 + .98, lab_, rotation=90, ha="left", va="center", size=5.2, weight="bold", color=col_)
+                    ax.text(xr, y0 + .98, "CNV only", rotation=90, ha="left", va="center", size=4.2, weight="bold", color=INK)
                 elif dose:   # alternate figure: mirror (top) and dose-aligned D4 (bottom) of the same 2x2, stacked beside the four rows
                     TA.add(ax, x0 + 2 + GAP, y0 + 2.05, 2, 1.95, s2get(trait, size, st, "M4"), ("a", "M4"), fs=8)
                     TA.add(ax, x0 + 2 + GAP, y0, 2, 1.95, dget(trait, size, st, "D4"), ("a", "D4"), fs=8)
                     ax.text(x0 + 3 + GAP, y0 + .12, "dose-aligned", ha="center", va="bottom", size=4.6, color=GREY)
                 else:
                     TA.add(ax, x0 + 2 + GAP, y0 + 1.5, 2, 2, s2get(trait, size, st, "M4"), ("a", "M4"), fs=8)   # beside the three TWAS-z rows
+        if AW:   # 'All genes' group (Jon 2026-11-26): genuine totals over every gene, All CNVs row only
+            x0 = bx + 2 * (UW + CG)
+            ax.text(x0 + AW / 2, UH + PT + .1, "All genes", ha="center", va="bottom", size=7.4, weight="bold", color=INK)
+            ax.add_patch(Rectangle((x0 - .24, -.24), 2 * SW - .04 + .48, 1.96 + .48, fc="#f2c230", ec="none", alpha=.75, zorder=0))
+            ax.text(x0 + SW / 2, UH + HY, "mirror", ha="center", va="bottom", size=4.6)
+            ax.text(x0 + 1.5 * SW, UH + HY, "dose-\naligned", ha="center", va="bottom", size=4.4, linespacing=.9)
+            for i, (size, _) in enumerate(AROWS):
+                y0 = -i * STEP
+                if size != "N1_inf":
+                    ax.text(x0 + SW, y0 + 1, "not fitted\nper CNV size", ha="center", va="center", size=5, color=GREY, linespacing=1.1)
+                    continue
+                mC, dC = total_tiles(trait)
+                for cx, c_, fam in ((x0, mC, "mirror"), (x0 + SW, dC, "dose")):
+                    TA.add(ax, cx, y0, SW - .04, 1.96, c_, tag(size, ("a", fam, "tot")), fs=7, sigcol=("#f2c230", (("tot", fam), trait, size), "box"))
+                ax.text(x0 + 2 * SW + .3, y0 + .98, "CNV total", rotation=90, ha="left", va="center", size=4.2, weight="bold", color=INK)
     for i, (_, slab) in enumerate(AROWS):
         y0 = -i * STEP
         ax.text(-LA - PS + .2, y0 + UH + PT - .12, slab, ha="left", va="top", size=6.8, weight="bold")
@@ -1021,7 +1108,8 @@ def fig3(dose=False):
         # CNV-TWAS': rotated label beside the z > +3 / z < -3 rows
         ax.text(-1.35, y0 + UH - 1, "TWAS", ha="center", va="center", size=5.2, weight="bold", rotation=90)
         for r_, (cls_, lab) in enumerate(ROWS4):
-            ax.text(-.15, y0 + UH - .5 - r_, lab, ha="right", va="center", size=5.6,
+            ly = y0 + 1 if (cls_ == "other" and S2VAR == "size2t") else y0 + UH - .5 - r_
+            ax.text(-.15, ly, lab, ha="right", va="center", size=5.6,
                     color=INK)   # Jon 2026-11-23: no coloured label text
     ybot = -(len(AROWS) - 1) * STEP - PB
     ax.set_xlim(-LA - PS - .9, fx["bmi"][1] + .1); ax.set_ylim(ybot - .2, UH + PT + 1.75)
@@ -1030,15 +1118,13 @@ def fig3(dose=False):
     foot = ("tile = z of each gene-count term of one joint model per trait (8 per CNV size: TWAS z > +3, −3 < z < +3, z < −3 or no TWAS z,\n"
             "x LC / HC = less / highly constrained genes);  mirror = (−DEL up + DUP up + DEL down − DUP down)/2 of the z > +3 (up) and z < −3 (down) terms;\n")
     if S2VAR == "size2t":
-        foot = ("tile = z of each term of one joint model per trait and CNV size (all CNVs: the same model pooled over size): total genes hit,\n"
-                "and genes with TWAS z > +3 (up), "
-                "z < −3 (down) or weak or no TWAS (−3 ≤ z ≤ +3 or no z), by LC / HC = less / highly constrained genes;\n"
-                "ref. = weak-or-no-TWAS LC genes, carried by the total;  mirror = (−DEL up + DUP up + DEL down − DUP down)/2;\n"
-                "dose-aligned = (DEL up + DUP up + DEL down + DUP down)/2;  CNV tiles: mirror (DUP − DEL)/√2 and dose-aligned (DUP + DEL)/√2\n"
-                "of the weak-or-no-TWAS HC term (LC: of the total-genes term); CNV total: gene-level DEL–DUP anticorrelation (mirror)\n"
-                "and a model of total genes hit only (dose-aligned); coloured box: tile shown as an arrow in b;\n" +
-                "total genes: analytic t (no gene annotation, so no shift null); other tiles: z against the null;\n")
-    fig.text(.33, .538 * fy, foot + "* P < 0.05;  ** FDR < 5% (BH within each statistic);  box: P < 0.05 and held when each of 8 major loci, or all minor loci, is removed",
+        # Jon 2026-11-26: three groups (LC, HC, All genes); the LC weak-or-no-TWAS row is the total-genes term (reference class)
+        # Jon 2026-11-26 'shorten this caption'
+        foot = ("tile = z of each gene-class term (TWAS z > +3, z < −3, weak or no TWAS; LC / HC = less / highly constrained) of one joint model\n"
+                "per trait and CNV size; LC weak or no TWAS = reference class (analytic t), other tiles = excess over it (z vs genome-shift null);\n"
+                "mirror = (−DEL up + DUP up + DEL down − DUP down)/2, dose-aligned = sum/2; CNV only: DUP vs DEL of the weak-or-no-TWAS term;\n"
+                "All genes: gene-level DEL–DUP anticorrelation and total-genes-only model, all sizes pooled; section colours: as the arrows in b;\n")
+    fig.text(.33, .538 * fy, foot + "* P < 0.05;  ** FDR < 5%;  black box: P < 0.05 in every locus-removal run (8 major loci, all minor loci)",
              size=5.3, va="center")
     SHOW_B = False   # Jon 2026-11-23: 'Drop panel b' (its weak-TWAS genes are now the 'weak or no TWAS' row of panel a); kept for reference
     if SHOW_B:
@@ -1077,6 +1163,11 @@ def fig3(dose=False):
               "CNV–TWAS, HC genes (TWAS z > +3 and z < −3)", "weak or no TWAS, HC genes   (arrows: FDR < 5% and P < 0.05 in every leave-one-locus-out run)"]
     if S2VAR == "size2t":   # grey component: total-genes term (ordinary gene) of the joint model
         pass   # no grey arrows, so no legend entry (Jon 2026-11-23)
+    if S2VAR == "size2t":   # Jon 2026-11-26: grey section of panel a = LC weak or no TWAS (reference class), which has no arrow
+        hs.append(Line2D([], [], color=LCW, lw=3)); lb.append("weak or no TWAS, LC genes (reference class)")
+    # Jon 2026-11-26: name the two dashed diagonals for the reader
+    hs.append(Line2D([], [], color=GREY, lw=.9, ls="--"))
+    lb.append("mirror axis: DEL, DUP opposite;  dose-aligned axis: same direction")
     fig.legend(hs, lb, loc="lower center", ncol=2, frameon=False, fontsize=5.8, bbox_to_anchor=(.5, -.003))
     fig.text(.01, .975, "a", size=11, weight="bold"); fig.text(.01, .465 * fy, "b", size=11, weight="bold")
     lab3 = os.environ.get("GW2_FIG3_LABEL")     # cohort label: meta runs only, from meta_info.json; GW2_FIG3_LABEL overrides ("" = none)
