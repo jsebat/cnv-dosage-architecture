@@ -12,8 +12,8 @@ Per-probe association tables (sumstats_*, lead_*; Jon 2026-11-25: "export all pr
 counts"): a withheld probe row is KEPT with its test statistic T and P (the signed T gives the direction); only the count, BETA, SE and FREQ
 are withheld. T and P alone do not give the count back; BETA with SE would (SE ~ 1/sqrt(n)). --drop_small_probe_rows restores the old
 behaviour (withheld probe rows left out).
-Person-level files (*genotype*, pheno, .cnv) are never copied. Null-replicate arrays (.npz, test statistics only) are
-copied as float32.
+Person-level files (*genotype*, pheno, .cnv) are never copied. Null-replicate arrays (.npz, and the ctx step's null_z_*.npy; test
+statistics only) are copied as float32. ConGA ctx tables (conga_ctx_*.tsv.gz) are copied without their per-set carrier counts.
 """
 import argparse
 import json
@@ -110,6 +110,11 @@ def main():
                 continue
             src = os.path.join(root, f); rel = os.path.relpath(src, a.results); dst = os.path.join(a.export, rel)
             os.makedirs(os.path.dirname(dst), exist_ok=True)
+            if f.startswith("conga_ctx_") and f.endswith((".tsv", ".tsv.gz")):
+                # person-level ConGA (ctx step): per-set carrier counts never leave (they differ between full and removal runs, so a
+                # small count could be recovered by subtraction); z, z_emp, P_emp and the null summaries are test statistics (Jon 2026-11-25)
+                read_tsv(src).drop(columns=["n_carriers"], errors="ignore").to_csv(dst, sep="\t", index=False)
+                continue
             if f.endswith((".tsv", ".tsv.gz")):
                 d = read_tsv(src)
                 cc = [c for c in COUNT_COLS if c in d.columns]
@@ -145,6 +150,11 @@ def main():
             elif f.endswith(".npz"):
                 z = np.load(src)
                 np.savez_compressed(dst, **{n: (z[n].astype(np.float32) if z[n].dtype.kind == "f" else z[n]) for n in z.files})
+            elif f.startswith("null_z_") and f.endswith(".npy"):   # ctx step: score z of every null replicate (test statistics only)
+                z = np.load(src)
+                if z.dtype.kind != "f":
+                    raise SystemExit(f"{src}: expected a float array of null z")
+                np.save(dst, z.astype(np.float32))
             elif f.endswith((".png", ".pdf", ".md", ".txt")):
                 shutil.copy(src, dst)
     tot = 0; lines = []

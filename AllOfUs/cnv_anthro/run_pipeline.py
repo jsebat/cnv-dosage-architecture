@@ -15,6 +15,8 @@ Steps
   additivity  constrained-gene dose response, sub-additivity, asymmetric vs mirror duplications, single hit vs count (additivity_constraint.py)
   scores   cross-fitted mirror/constraint axis scores and their additivity across CNVs (score_axes.py)
   joint    joint models behind the joint-model heatmap: all CNVs + 4 carrier removals (make_union_strata.py + conga_grid_qt.py, UKBB shifts)
+  ctx      person-level ConGA of context and signal-group gene sets, DEL and DUP, full + locus-removal runs (conga_ctx_qt.py, UKBB shifts;
+           config "ctx"); exported by 'export' without per-set carrier counts; combined across cohorts at UCSD by meta_ctx.py
   export   aggregate-only copy with the small-cell rule, including cross-stratum (secondary) suppression (export_aggregate.py)
 
 Strata (config "strata"): each stratum is a row filter on the phenotype table, e.g. {"eur": {"ancestry_pred": ["eur"]}, "female": {"sex": [2]}}.
@@ -273,6 +275,27 @@ def main():
                                       "--seed", str(G.get("seed", 2026)), "--loo_mode", "all_minor", "--major_loci", J["major_loci"],
                                       "--perms_file", pf, "--numeric", num, "--factors", fac, "--out", f"{out}/joint/{r['name']}/{t}/{safe(r['variant'])}"])
                     jobs = a.jobs or J.get("jobs", 5); thr = max(1, cpu // jobs)
+                    with ThreadPoolExecutor(max_workers=jobs) as ex:
+                        list(ex.map(lambda c: run(c, threads=thr), calls))
+                if "ctx" in steps and C.get("ctx") and sname in C["ctx"].get("strata", ["all"]) and t in C["ctx"].get("traits", [t]):
+                    # person-level ConGA of context and signal-group gene sets (CNV GWAS paper, Supplementary Fig. 1; conga_ctx_qt.py):
+                    # full run against the UKBB shared shifts, then the locus-removal runs for the UKBB list of sets, each DEL and DUP.
+                    # A missing shift file is an error: the meta-analysis (meta_ctx.py) needs replicate i = the same shift in every cohort.
+                    X = C["ctx"]; sf = X["shifts"].replace("{trait}", t)
+                    if not os.path.exists(sf):
+                        raise SystemExit(f"shared shift file missing: {sf} (resources bundle: resources/shared_shifts)")
+                    base = ["conga_ctx_qt.py", "--pheno", pheno, "--trait", t, "--trait_col", T["column"], "--cnv", cnv, "--sets", X["sets"],
+                            "--exons", X["exons"], "--loci34", X["loci34"], "--shifts", X["shifts"], "--nrep", str(X.get("nrep", 2000)),
+                            "--numeric", num, "--factors", fac] + (["--families", X["families"]] if X.get("families") else [])
+                    calls = []
+                    for dos in X.get("dosages", ["DEL", "DUP"]):
+                        for mode in (["full", "loo"] if X.get("loo_set_list") else ["full"]):
+                            od = f"{out}/ctx/{mode}_{t}_{dos}"
+                            if os.path.exists(f"{od}/info.json"):
+                                print("== ctx done, skipped:", od, flush=True); continue
+                            extra = ["--runs", "loo", "--set_list", X["loo_set_list"], "--loo_units", X["loo_units"]] if mode == "loo" else []
+                            calls.append(base + ["--dosage", dos, "--out", od] + extra)
+                    jobs = a.jobs or X.get("jobs", 4); thr = max(1, cpu // jobs)
                     with ThreadPoolExecutor(max_workers=jobs) as ex:
                         list(ex.map(lambda c: run(c, threads=thr), calls))
         except subprocess.CalledProcessError as e:
