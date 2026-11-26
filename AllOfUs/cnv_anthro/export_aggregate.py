@@ -12,6 +12,9 @@ Per-probe association tables (sumstats_*, lead_*; Jon 2026-11-25: "export all pr
 counts"): a withheld probe row is KEPT with its test statistic T and P (the signed T gives the direction); only the count, BETA, SE and FREQ
 are withheld. T and P alone do not give the count back; BETA with SE would (SE ~ 1/sqrt(n)). --drop_small_probe_rows restores the old
 behaviour (withheld probe rows left out).
+Folders with their own exporter (fig3/: run_fig3.py; gene_assoc*/: export_gene_assoc.py) are skipped. conga_grid_qt.py folders (grid,
+joint): a term with n_carriers_term 1..min_cell gets '<=min_cell', and beta/se/t of that (run, term) and its mirror readout are blanked
+in observed_terms.tsv and in the null_runs.npz columns, as run_fig3.export_fit does (Milad 2026-11-25).
 Person-level files (*genotype*, pheno, .cnv) are never copied. Null-replicate arrays (.npz, and the ctx step's null_z_*.npy; test
 statistics only) are copied as float32. ConGA ctx tables (conga_ctx_*.tsv.gz) are copied without their per-set carrier counts.
 """
@@ -30,6 +33,24 @@ STAT_COLS = ["BETA", "SE", "T", "P", "BETA_SD", "raw_mean_diff_unadjusted", "FRE
 NEVER = ("genotype", "pheno", ".cnv", "allele_genotypes", "stratum_pheno")
 KEYS = [["CHR", "BP"], ["trait", "allele"], ["allele"], ["trait", "NAME", "CNV"], ["group", "bin"], ["group", "dup_genes"],
         ["dosage", "group", "HC_bin"], ["axis", "model"], ["axis"]]
+
+
+OWN_EXPORTERS = ("fig3", "gene_assoc", "gene_assoc_rare")   # folders exported by run_fig3.py / export_gene_assoc.py, never walked here
+
+
+def small_terms(folder, k):
+    """(run, readout) cells of a conga_grid_qt.py folder whose term has 1..k carriers (n_carriers_term), plus each one's mirror readout
+    (Milad 2026-11-25: n_carriers_term was not masked; same rule as run_fig3.export_fit)."""
+    p = os.path.join(folder, "observed_terms.tsv")
+    if k <= 0 or not os.path.exists(p):
+        return set()
+    ob = pd.read_csv(p, sep="\t")
+    if "n_carriers_term" not in ob.columns:
+        return set()
+    n = pd.to_numeric(ob.n_carriers_term, errors="coerce"); s = set()
+    for r in ob[n.between(1, k)].itertuples():
+        s.add((r.run, r.readout)); s.add((r.run, r.readout.rsplit("|", 1)[0] + "|mirror"))
+    return s
 
 
 def scrub_json(o, k):
@@ -77,7 +98,8 @@ def main():
     extra = defaultdict(set)
     if strata and "all" in strata:
         rels = set()
-        for root, _, files in os.walk(os.path.join(a.results, "all")):
+        for root, dirs, files in os.walk(os.path.join(a.results, "all")):
+            dirs[:] = [x for x in dirs if x not in OWN_EXPORTERS]
             for f in files:
                 if f.endswith((".tsv", ".tsv.gz")) and not any(x in f for x in NEVER):
                     rels.add(os.path.relpath(os.path.join(root, f), os.path.join(a.results, "all")))
@@ -104,7 +126,8 @@ def main():
                 for kid in kids:
                     extra[(kid, rel)] |= keys
     n_sup = 0; n_sec = 0
-    for root, _, files in os.walk(a.results):
+    for root, dirs, files in os.walk(a.results):
+        dirs[:] = [x for x in dirs if x not in OWN_EXPORTERS]           # fig3/ and gene tables have their own exporters
         for f in files:
             if any(x in f for x in NEVER):
                 continue
@@ -114,6 +137,31 @@ def main():
                 # person-level ConGA (ctx step): per-set carrier counts never leave (they differ between full and removal runs, so a
                 # small count could be recovered by subtraction); z, z_emp, P_emp and the null summaries are test statistics (Jon 2026-11-25)
                 read_tsv(src).drop(columns=["n_carriers"], errors="ignore").to_csv(dst, sep="\t", index=False)
+                continue
+            if f == "observed_terms.tsv":                           # conga_grid_qt.py (grid, joint): run_fig3.export_fit's rule
+                d = read_tsv(src); sm = small_terms(root, k)
+                if sm:
+                    hit = np.array([(r, q) in sm for r, q in zip(d.run, d.readout)])
+                    d.loc[hit, [c for c in ("beta", "se", "t") if c in d.columns]] = np.nan; n_sup += int(hit.sum())
+                if "n_carriers_term" in d.columns and k > 0:
+                    v = pd.to_numeric(d.n_carriers_term, errors="coerce"); d["n_carriers_term"] = d.n_carriers_term.astype(object)
+                    d.loc[v.between(1, k).to_numpy(), "n_carriers_term"] = f"<={k}"
+                d.to_csv(dst, sep="\t", index=False, float_format="%.10g")
+                continue
+            if f == "null_runs.npz":                                # null columns of withheld (run, term) cells blanked, as export_fit
+                z = np.load(src); out = {n: (z[n].astype(np.float32) if z[n].dtype.kind == "f" else z[n]) for n in z.files}
+                sm = small_terms(root, k)
+                if sm:
+                    nf = os.path.join(root, "null_full.npz")
+                    if not os.path.exists(nf):
+                        raise SystemExit(f"{root}: withheld terms but no null_full.npz to map readout names; export this folder with run_fig3.py")
+                    names = {n[len("names__"):]: [str(s) for s in np.load(nf)[n]] for n in np.load(nf).files if n.startswith("names__")}
+                    for (rn, ro) in sm:
+                        for vn, nm in names.items():
+                            key = f"{rn}__{vn}"
+                            if key in out and ro in nm and out[key].dtype.kind == "f":
+                                out[key][:, nm.index(ro)] = np.nan
+                np.savez_compressed(dst, **out)
                 continue
             if f.endswith((".tsv", ".tsv.gz")):
                 d = read_tsv(src)
